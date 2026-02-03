@@ -1,5 +1,5 @@
-import Sidebar from "@/components/Sidebar";
-import ContactsList from "@/components/ContactsList";
+import Sidebar from "../../components/Sidebar";
+import ContactsList from "../../components/ContactsList";
 
 export default function ContactsPage() {
   return (

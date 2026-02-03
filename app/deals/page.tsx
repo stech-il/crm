@@ -1,5 +1,5 @@
-import Sidebar from "@/components/Sidebar";
-import DealsList from "@/components/DealsList";
+import Sidebar from "../../components/Sidebar";
+import DealsList from "../../components/DealsList";
 
 export default function DealsPage() {
   return (
