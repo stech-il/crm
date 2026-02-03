@@ -1,5 +1,5 @@
 {
-  "name": "crm-cloud",
+  "name": "crm",
   "version": "1.0.0",
   "private": true,
   "prisma": {

@@ -2,6 +2,8 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 
+echo Project: crm
+echo.
 echo Initializing Git...
 if not exist .git git init
 
