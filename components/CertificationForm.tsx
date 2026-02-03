@@ -159,7 +159,7 @@ export default function CertificationForm() {
             <input
               value={form.issueDateHebrew}
               onChange={(e) => setForm({ ...form, issueDateHebrew: e.target.value })}
-              placeholder="כא' אלול תשפ\"ה"
+              placeholder={'כא\' אלול תשפ"ה'}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
             />
           </div>
@@ -177,7 +177,7 @@ export default function CertificationForm() {
             <input
               value={form.endDateHebrew}
               onChange={(e) => setForm({ ...form, endDateHebrew: e.target.value })}
-              placeholder="כא' כסלו תשפ\"ז"
+              placeholder={'כא\' כסלו תשפ"ז'}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
             />
           </div>
