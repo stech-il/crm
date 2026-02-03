@@ -1,17 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-type FieldDef = {
-  id: string;
-  name: string;
-  label: string;
-  type: string;
-  options: string | null;
-  required: boolean;
-  placeholder: string | null;
-  section: string | null;
-};
+import type { FieldDef } from "../lib/dynamicTypes";
 
 type Props = {
   field: FieldDef;

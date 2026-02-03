@@ -3,25 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DynamicForm from "./DynamicForm";
-
-type FieldDef = {
-  id: string;
-  name: string;
-  label: string;
-  type: string;
-  options?: string | null;
-  required?: boolean;
-  placeholder?: string | null;
-  section?: string | null;
-  order?: number;
-};
-
-type Entity = {
-  id: string;
-  name: string;
-  slug: string;
-  fields: FieldDef[];
-};
+import { normalizeEntity, type DynamicEntity } from "../lib/dynamicTypes";
 
 export default function DynamicFormPage({
   entitySlug,
@@ -31,7 +13,7 @@ export default function DynamicFormPage({
   recordId?: string;
 }) {
   const router = useRouter();
-  const [entity, setEntity] = useState<Entity | null>(null);
+  const [entity, setEntity] = useState<DynamicEntity | null>(null);
   const [initialData, setInitialData] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
@@ -39,14 +21,14 @@ export default function DynamicFormPage({
       fetch(`/api/dynamic/${entitySlug}/${recordId}`)
         .then((r) => r.json())
         .then((res) => {
-          setEntity(res.entity as Entity);
+          if (res.entity) setEntity(normalizeEntity(res.entity));
           setInitialData((res.record?.data as Record<string, unknown>) || {});
         });
     } else {
       fetch(`/api/dynamic/${entitySlug}`)
         .then((r) => r.json())
         .then((res) => {
-          setEntity(res.entity as Entity);
+          if (res.entity) setEntity(normalizeEntity(res.entity));
         });
     }
   }, [entitySlug, recordId]);

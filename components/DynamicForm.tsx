@@ -3,28 +3,10 @@
 import { useEffect, useState } from "react";
 import DynamicField from "./DynamicField";
 import CollapsibleSection from "./CollapsibleSection";
-
-type FieldDef = {
-  id: string;
-  name: string;
-  label: string;
-  type: string;
-  options: string | null;
-  required: boolean;
-  placeholder: string | null;
-  section: string | null;
-  order: number;
-};
-
-type Entity = {
-  id: string;
-  name: string;
-  slug: string;
-  fields: FieldDef[];
-};
+import type { DynamicEntity } from "../lib/dynamicTypes";
 
 type Props = {
-  entity: Entity;
+  entity: DynamicEntity;
   initialData?: Record<string, unknown>;
   onSubmit: (data: Record<string, unknown>) => Promise<void>;
   onCancel?: () => void;
