@@ -78,7 +78,7 @@ export default function CustomerForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const payload = { ...form };
+    const payload: Record<string, string | number | null> = { ...form };
     if (payload.managerId === "") payload.managerId = null;
     if (id) {
       await fetch(`/api/customers/${id}`, {
