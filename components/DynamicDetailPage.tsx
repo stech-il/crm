@@ -7,7 +7,7 @@ import { Pencil } from "lucide-react";
 
 type FieldDef = { id: string; name: string; label: string; type: string };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
-type Record = { id: string; data: Record<string, unknown>; updatedAt: string };
+type DynamicRecordData = { id: string; data: Record<string, unknown>; updatedAt: string };
 
 export default function DynamicDetailPage({
   entitySlug,
@@ -18,7 +18,7 @@ export default function DynamicDetailPage({
 }) {
   const router = useRouter();
   const [entity, setEntity] = useState<Entity | null>(null);
-  const [record, setRecord] = useState<Record | null>(null);
+  const [record, setRecord] = useState<DynamicRecordData | null>(null);
 
   useEffect(() => {
     fetch(`/api/dynamic/${entitySlug}/${recordId}`)

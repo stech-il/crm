@@ -6,7 +6,7 @@ import { Plus, Search } from "lucide-react";
 
 type FieldDef = { id: string; name: string; label: string; type: string };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
-type Record = { id: string; data: Record<string, unknown>; updatedAt: string };
+type DynamicRecordItem = { id: string; data: Record<string, unknown>; updatedAt: string };
 
 type Props = {
   entitySlug: string;
@@ -14,7 +14,7 @@ type Props = {
 
 export default function DynamicList({ entitySlug }: Props) {
   const [entity, setEntity] = useState<Entity | null>(null);
-  const [records, setRecords] = useState<Record[]>([]);
+  const [records, setRecords] = useState<DynamicRecordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
