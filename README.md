@@ -4,9 +4,11 @@
 
 ## פיצ'רים
 
-- **לוח בקרה** - סטטיסטיקות, אנשי קשר, עסקאות, ערך כולל
-- **אנשי קשר** - הוספה, עריכה, מחיקה, קישור לעסקאות
-- **עסקאות** - Pipeline עם שלבים (ליד → נסגר), גרירה בין שלבים
+- **התחברות משתמשים** - הרשמה, התחברות, התנתקות
+- **לוח בקרה** - סטטיסטיקות, לקוחות, אישורי כשרות, משימות
+- **לקוחות** - רשימה, טפסים מורחבים, תצוגות שמורות
+- **אישורי כשרות** - ניהול אישורים למוצרים
+- **משימות, הזמנות, מוצרים** - מודולים מלאים
 
 ## התקנה מקומית
 
@@ -14,8 +16,10 @@
 # התקנת תלויות
 npm install
 
-# יצירת קובץ .env עם DATABASE_URL
-# עבור PostgreSQL מקומי: postgresql://user:password@localhost:5432/crm
+# יצירת קובץ .env עם:
+# DATABASE_URL=postgresql://user:password@localhost:5432/crm
+# NEXTAUTH_SECRET=מפתח-סודי-ארוך-לפחות-32-תווים
+# NEXTAUTH_URL=http://localhost:3000
 
 # יצירת טבלאות במסד הנתונים
 npx prisma db push
@@ -28,6 +32,10 @@ npm run dev
 ```
 
 פתח [http://localhost:3000](http://localhost:3000)
+
+**משתמשי דמו** (אחרי `npm run db:seed`):
+- אימייל: `admin@crm.com` | סיסמה: `123456`
+- אימייל: `eliezer@example.com` | סיסמה: `123456`
 
 ## פריסה ב-Render
 
@@ -50,7 +58,10 @@ npm run dev
    - חבר את ה-repo
    - **Build Command:** `npm install && npx prisma generate && npm run build`
    - **Start Command:** `npx prisma db push && npm start`
-   - **Environment:** הוסף `DATABASE_URL` עם ה-Connection String מ-PostgreSQL
+   - **Environment:** הוסף:
+     - `DATABASE_URL` - Connection String מ-PostgreSQL
+     - `NEXTAUTH_SECRET` - מפתח סודי (לפחות 32 תווים)
+     - `NEXTAUTH_URL` - כתובת האתר (למשל https://your-app.onrender.com)
 
 ## מבנה הפרויקט
 

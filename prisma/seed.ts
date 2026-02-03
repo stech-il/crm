@@ -1,20 +1,40 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create users
+  // Create users with passwords (password: 123456)
+  const defaultPassword = await bcrypt.hash("123456", 10);
   let user1 = await prisma.user.findFirst({ where: { email: "eliezer@example.com" } });
   if (!user1) {
     user1 = await prisma.user.create({
-      data: { name: "אליעזר רינגר", email: "eliezer@example.com" },
+      data: { name: "אליעזר רינגר", email: "eliezer@example.com", password: defaultPassword },
+    });
+  } else if (!user1.password) {
+    await prisma.user.update({
+      where: { id: user1.id },
+      data: { password: defaultPassword },
     });
   }
 
-  const user2 = await prisma.user.findFirst({ where: { email: "asher@example.com" } });
+  let user2 = await prisma.user.findFirst({ where: { email: "asher@example.com" } });
   if (!user2) {
-    await prisma.user.create({
-      data: { name: "אשר הרש", email: "asher@example.com" },
+    user2 = await prisma.user.create({
+      data: { name: "אשר הרש", email: "asher@example.com", password: defaultPassword },
+    });
+  } else if (!user2.password) {
+    await prisma.user.update({
+      where: { id: user2.id },
+      data: { password: defaultPassword },
+    });
+  }
+
+  // Admin user
+  let admin = await prisma.user.findFirst({ where: { email: "admin@crm.com" } });
+  if (!admin) {
+    admin = await prisma.user.create({
+      data: { name: "מנהל מערכת", email: "admin@crm.com", password: defaultPassword, role: "admin" },
     });
   }
 
@@ -67,6 +87,14 @@ async function main() {
       assigneeId: user1.id,
     },
   });
+  }
+
+  // Create default saved view for customers
+  const existingView = await prisma.savedView.findFirst({ where: { module: "customers" } });
+  if (!existingView) {
+    await prisma.savedView.create({
+      data: { name: "כל הלקוחות", module: "customers" },
+    });
   }
 
   // Legacy: contacts and deals

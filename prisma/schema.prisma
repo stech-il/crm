@@ -11,8 +11,12 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   name      String
-  email     String?
+  email     String?  @unique
+  password  String?  // bcrypt hash - לא null עבור התחברות
+  role      String   @default("user") // admin, user
+  image     String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   customers Customer[] @relation("CustomerManager")
   tasks     Task[]
   certifications Certification[]
@@ -198,4 +202,75 @@ model Deal {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ============ מערכת דינמית - אדמין מגדיר הכל ============
+
+// ישות - סוג רשומה (לקוח, אישור, מוצר...)
+model Entity {
+  id          String   @id @default(cuid())
+  name        String   // שם בעברית
+  slug        String   @unique // מזהה (customers, certifications)
+  icon        String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  fields      FieldDefinition[]
+  records     DynamicRecord[]
+}
+
+// הגדרת שדה - אדמין מוסיף/משנה שדות
+model FieldDefinition {
+  id          String   @id @default(cuid())
+  entityId    String
+  entity      Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  name        String   // מזהה טכני (primaryPhone, settlement)
+  label       String   // תווית בעברית
+  type        String   // text, number, email, phone, textarea, select, multiselect, date, datetime, checkbox, file, url, currency, user, relation
+  options     String?  // JSON - עבור select: [{value, label}], עבור relation: entityId
+  required    Boolean  @default(false)
+  order       Int      @default(0)
+  section     String?  // קבוצה (מידע על הלקוח, פרטי תרומה)
+  placeholder String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  files       RecordFile[]
+  @@unique([entityId, name])
+}
+
+// רשומה דינמית - הנתונים בפורמט גמיש
+model DynamicRecord {
+  id          String   @id @default(cuid())
+  entityId    String
+  entity      Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  data        Json     // { fieldName: value, ... }
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  activities  DynamicActivity[]
+  files       RecordFile[]
+}
+
+// קבצים מצורפים
+model RecordFile {
+  id              String   @id @default(cuid())
+  recordId        String
+  record          DynamicRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  fieldDefinitionId String?
+  fieldDefinition  FieldDefinition? @relation(fields: [fieldDefinitionId], references: [id], onDelete: SetNull)
+  filename        String
+  url             String
+  size            Int?
+  createdAt       DateTime @default(now())
+}
+
+// פעילות לרשומות דינמיות
+model DynamicActivity {
+  id        String   @id @default(cuid())
+  recordId  String
+  record    DynamicRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  type      String   // note, task, file
+  content   String?
+  createdById String?
+  createdAt DateTime @default(now())
 }

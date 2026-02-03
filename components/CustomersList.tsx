@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Filter, List, LayoutGrid } from "lucide-react";
+import { Plus, Search, Filter } from "lucide-react";
+import SavedViewsSidebar from "./SavedViewsSidebar";
 
 type Customer = {
   id: string;
@@ -32,7 +33,8 @@ export default function CustomersList() {
   }, [search]);
 
   return (
-    <div className="p-8">
+    <div className="flex">
+    <div className="flex-1 p-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">
           חיפוש לקוחות ({customers.length.toLocaleString("he-IL")})
@@ -142,6 +144,8 @@ export default function CustomersList() {
           ))}
         </div>
       )}
+    </div>
+    <SavedViewsSidebar module="customers" />
     </div>
   );
 }
