@@ -42,7 +42,7 @@ export default function DynamicForm({ entity, initialData = {}, onSubmit, onCanc
       .catch(() => {});
   }, []);
 
-  const sections = [...new Set(entity.fields.map((f) => f.section || "כללי"))];
+  const sections = Array.from(new Set(entity.fields.map((f) => f.section || "כללי")));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
