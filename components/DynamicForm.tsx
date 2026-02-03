@@ -42,7 +42,7 @@ export default function DynamicForm({ entity, initialData = {}, onSubmit, onCanc
       {sections.map((section) => {
         const sectionFields = entity.fields
           .filter((f) => (f.section || "כללי") === section)
-          .sort((a, b) => a.order - b.order);
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         if (sectionFields.length === 0) return null;
 
         return (

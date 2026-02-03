@@ -22,7 +22,7 @@ export default function Sidebar() {
   const nav = [
     { href: "/", label: "לוח בקרה", icon: LayoutDashboard },
     ...entities
-      .sort((a, b) => a.order - b.order)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map((e) => ({
         href: `/dynamic/${e.slug}`,
         label: e.name,
