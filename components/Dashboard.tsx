@@ -1,23 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Briefcase, DollarSign, TrendingUp } from "lucide-react";
-
-const STAGE_LABELS: Record<string, string> = {
-  lead: "ליד",
-  qualified: "איכותי",
-  proposal: "הצעה",
-  negotiation: "משא ומתן",
-  closed_won: "נסגר בהצלחה",
-  closed_lost: "נסגר בהפסד",
-};
+import Link from "next/link";
+import { Users, Award, CheckSquare, Briefcase, DollarSign } from "lucide-react";
 
 export default function Dashboard() {
   const [data, setData] = useState<{
-    contactsCount: number;
-    dealsCount: number;
-    totalValue: number;
-    dealsByStage: Record<string, { count: number; value: number }>;
+    customersCount: number;
+    certificationsCount: number;
+    tasksCount: number;
+    openTasksCount: number;
+    totalValue?: number;
   } | null>(null);
 
   useEffect(() => {
@@ -32,7 +25,7 @@ export default function Dashboard() {
         <div className="animate-pulse space-y-6">
           <div className="h-8 w-48 rounded bg-slate-200" />
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="h-24 rounded-lg bg-slate-200" />
             ))}
           </div>
@@ -42,21 +35,23 @@ export default function Dashboard() {
   }
 
   const cards = [
-    { label: "אנשי קשר", value: data.contactsCount, icon: Users, color: "bg-blue-500" },
-    { label: "עסקאות", value: data.dealsCount, icon: Briefcase, color: "bg-emerald-500" },
-    { label: "ערך כולל (₪)", value: data.totalValue.toLocaleString("he-IL"), icon: DollarSign, color: "bg-amber-500" },
+    { label: "לקוחות", value: data.customersCount, icon: Users, href: "/customers", color: "bg-blue-500" },
+    { label: "אישורי כשרות", value: data.certificationsCount, icon: Award, href: "/certifications", color: "bg-emerald-500" },
+    { label: "משימות פתוחות", value: data.openTasksCount, icon: CheckSquare, href: "/tasks", color: "bg-amber-500" },
+    { label: "עסקאות", value: data.totalValue?.toLocaleString("he-IL") ?? "0", icon: DollarSign, href: "/deals", color: "bg-purple-500" },
   ];
 
   return (
     <div className="p-8">
       <h1 className="mb-8 text-2xl font-bold text-slate-800">לוח בקרה</h1>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <div
+            <Link
               key={card.label}
+              href={card.href}
               className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="flex items-center justify-between">
@@ -68,33 +63,9 @@ export default function Dashboard() {
                   <Icon className="h-6 w-6" />
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
-      </div>
-
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-800">
-          <TrendingUp className="h-5 w-5" />
-          עסקאות לפי שלב
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-          {Object.entries(data.dealsByStage).map(([stage, { count, value }]) => (
-            <div
-              key={stage}
-              className="rounded-lg border border-slate-100 bg-slate-50 p-4"
-            >
-              <p className="text-sm font-medium text-slate-600">
-                {STAGE_LABELS[stage] ?? stage}
-              </p>
-              <p className="mt-1 text-xl font-bold text-slate-800">{count}</p>
-              <p className="text-sm text-slate-500">₪{value.toLocaleString("he-IL")}</p>
-            </div>
-          ))}
-        </div>
-        {Object.keys(data.dealsByStage).length === 0 && (
-          <p className="text-center text-slate-500">אין עסקאות עדיין</p>
-        )}
       </div>
     </div>
   );
