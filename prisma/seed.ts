@@ -97,8 +97,30 @@ async function main() {
     });
   }
 
+  // Dynamic entities - ישויות דינמיות
+  let entityCustomers = await prisma.entity.findFirst({ where: { slug: "dynamic-customers" } });
+  if (!entityCustomers) {
+    entityCustomers = await prisma.entity.create({
+      data: {
+        name: "לקוחות דינמיים",
+        slug: "dynamic-customers",
+        order: 0,
+      },
+    });
+    await prisma.fieldDefinition.createMany({
+      data: [
+        { entityId: entityCustomers.id, name: "name", label: "שם לקוח", type: "text", required: true, order: 0, section: "פרטים בסיסיים" },
+        { entityId: entityCustomers.id, name: "primaryPhone", label: "טלפון ראשי", type: "phone", order: 1, section: "פרטים בסיסיים" },
+        { entityId: entityCustomers.id, name: "email", label: "אימייל", type: "email", order: 2, section: "פרטים בסיסיים" },
+        { entityId: entityCustomers.id, name: "settlement", label: "ישוב", type: "text", order: 3, section: "כתובת" },
+        { entityId: entityCustomers.id, name: "managerId", label: "מנהל לקוח", type: "user", order: 4, section: "פרטים בסיסיים" },
+      ],
+    });
+  }
+
   // Legacy: contacts and deals
-  const contact1 = await prisma.contact.create({
+  let contact1 = await prisma.contact.findFirst({ where: { email: "david@example.com" } });
+  if (!contact1) contact1 = await prisma.contact.create({
     data: {
       name: "דוד כהן",
       email: "david@example.com",
@@ -107,6 +129,7 @@ async function main() {
       position: "מנהל רכש",
     },
   });
+  }
 
   await prisma.deal.createMany({
     data: [

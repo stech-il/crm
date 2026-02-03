@@ -11,18 +11,21 @@ import {
   CheckSquare,
   Package,
   Briefcase,
+  Settings,
 } from "lucide-react";
 import clsx from "clsx";
 
 const nav = [
   { href: "/", label: "לוח בקרה", icon: LayoutDashboard },
   { href: "/customers", label: "לקוחות", icon: Users },
+  { href: "/dynamic/dynamic-customers", label: "לקוחות דינמיים", icon: Users },
   { href: "/certifications", label: "אישורי כשרות", icon: Award },
   { href: "/orders", label: "הזמנות", icon: ShoppingCart },
   { href: "/tasks", label: "משימות", icon: CheckSquare },
   { href: "/products", label: "מוצרים", icon: Package },
   { href: "/deals", label: "עסקאות", icon: Briefcase },
   { href: "/contacts", label: "אנשי קשר", icon: UserCircle },
+  { href: "/admin", label: "ניהול שדות", icon: Settings },
 ];
 
 export default function Sidebar() {
