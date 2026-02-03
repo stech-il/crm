@@ -4,11 +4,23 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DynamicForm from "./DynamicForm";
 
+type FieldDef = {
+  id: string;
+  name: string;
+  label: string;
+  type: string;
+  options?: string | null;
+  required?: boolean;
+  placeholder?: string | null;
+  section?: string | null;
+  order?: number;
+};
+
 type Entity = {
   id: string;
   name: string;
   slug: string;
-  fields: unknown[];
+  fields: FieldDef[];
 };
 
 export default function DynamicFormPage({
@@ -27,14 +39,14 @@ export default function DynamicFormPage({
       fetch(`/api/dynamic/${entitySlug}/${recordId}`)
         .then((r) => r.json())
         .then((res) => {
-          setEntity(res.entity);
+          setEntity(res.entity as Entity);
           setInitialData((res.record?.data as Record<string, unknown>) || {});
         });
     } else {
       fetch(`/api/dynamic/${entitySlug}`)
         .then((r) => r.json())
         .then((res) => {
-          setEntity(res.entity);
+          setEntity(res.entity as Entity);
         });
     }
   }, [entitySlug, recordId]);
