@@ -1,4 +1,4 @@
-import DynamicFormPage from "../../../../../components/DynamicFormPage";
+import DynamicFormPage from "../../../../../../components/DynamicFormPage";
 
 export default async function EditDynamicRecordPage({
   params,

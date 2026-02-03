@@ -1,4 +1,4 @@
-import DynamicListWrapper from "../../../components/DynamicListWrapper";
+import DynamicListWrapper from "../../../../components/DynamicListWrapper";
 
 export default async function DynamicEntityPage({
   params,

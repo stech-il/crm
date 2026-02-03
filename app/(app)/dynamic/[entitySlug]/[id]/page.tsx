@@ -1,4 +1,4 @@
-import DynamicDetailPage from "../../../../components/DynamicDetailPage";
+import DynamicDetailPage from "../../../../../../components/DynamicDetailPage";
 
 export default async function DynamicRecordDetailPage({
   params,
