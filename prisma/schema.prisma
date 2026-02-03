@@ -7,210 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// משתמשים / מנהלי לקוח
+// משתמשים
 model User {
   id        String   @id @default(cuid())
   name      String
   email     String?  @unique
-  password  String?  // bcrypt hash - לא null עבור התחברות
+  password  String?  // bcrypt hash
   role      String   @default("user") // admin, user
   image     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  customers Customer[] @relation("CustomerManager")
-  tasks     Task[]
-  certifications Certification[]
 }
 
-// לקוחות - מורחב
-model Customer {
-  id                    String   @id @default(cuid())
-  name                  String
-  primaryPhone          String?
-  secondaryPhone        String?
-  contactPersonPhone    String?
-  familyMemberPhone     String?
-  primaryPhoneName      String?
-  secondaryPhoneName    String?
-  billingEmail          String?
-  invoiceName           String?
-  paymentTerms          String?
-  paymentDayProcedure   String?
-  note                  String?
-  parentCustomerId      String?
-  parentCustomer        Customer?  @relation("ParentChild", fields: [parentCustomerId], references: [id])
-  childCustomers        Customer[] @relation("ParentChild")
-  settlement            String?
-  street                String?
-  houseNumber           String?
-  apartment             String?
-  floor                 String?
-  neighborhood          String?
-  area                  String?
-  cityReadOnly          String?
-  businessDays          String?
-  email1                String?
-  email2                String?
-  managerId             String?
-  manager               User?     @relation("CustomerManager", fields: [managerId], references: [id])
-  sourceOfArrival       String?
-  sourceDetails         String?
-  sourceNote            String?
-  treatmentStatus       String?
-  reasonIfNotClosed     String?
-  customerStatus        String?   @default("לקוח")
-  primaryProductStatus  String?
-  secondaryProductStatus String?
-  centralInvoice        String?
-  donationStatus        String?
-  donationAmount        Float    @default(0)
-  customerNumber        String?
-  arrivalNotes          String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  createdById            String?
-  updatedById            String?
-  products              CustomerProduct[]
-  tasks                 Task[]
-  orders                Order[]
-  activities            Activity[]
-}
-
-// מוצרי לקוח - ראשי ומשני
-model CustomerProduct {
-  id                String   @id @default(cuid())
-  customerId        String
-  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  type              String   // primary, secondary
-  productId         String?
-  product           Product? @relation(fields: [productId], references: [id])
-  structure         String?
-  informCustomer    String?
-  solution          String?
-  disconnectButtons String?
-  price             Float    @default(0)
-  warranty          String?
-  technicalNote     String?
-  linkedToCompensation String?
-}
-
-// מוצרים
-model Product {
-  id            String   @id @default(cuid())
-  name          String
-  category      String?
-  price         Float    @default(0)
-  customerProducts CustomerProduct[]
-  certifications Certification[]
-}
-
-// אישורי כשרות
-model Certification {
-  id              String   @id @default(cuid())
-  company         String
-  name            String
-  field           String?   // מקפיאים, מזגנים, מיחם...
-  certifiedOn     String?   // מצב שבת, מכני...
-  status          String?   // מוצר עדיין לא בשוק, בתוקף...
-  issueDate       String?
-  issueDateHebrew String?
-  endDate         DateTime?
-  endDateHebrew   String?
-  contactPerson   String?
-  additionalContact String?
-  bonded          Boolean  @default(false)
-  shortModelName  String?
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id])
-  productId       String?
-  product         Product? @relation(fields: [productId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  activities      Activity[]
-}
-
-// משימות
-model Task {
-  id          String   @id @default(cuid())
-  title       String
-  completed   Boolean  @default(false)
-  dueDate     DateTime?
-  customerId  String?
-  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  certificationId String?
-  assigneeId  String?
-  assignee    User?    @relation(fields: [assigneeId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// הזמנות
-model Order {
-  id          String   @id @default(cuid())
-  customerId  String
-  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  status      String?
-  total       Float    @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// תצוגות שמורות
-model SavedView {
-  id        String   @id @default(cuid())
-  name      String
-  filter    String?  // JSON
-  sort      String?
-  module    String   // customers, certifications, etc.
-}
-
-// פעילות - הערות, קבצים, היסטוריה
-model Activity {
-  id              String   @id @default(cuid())
-  type            String   // note, task, file, call, whatsapp, sms
-  title           String?
-  content         String?
-  customerId      String?
-  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  certificationId String?
-  certification    Certification? @relation(fields: [certificationId], references: [id], onDelete: SetNull)
-  createdById     String?
-  createdAt       DateTime @default(now())
-}
-
-// שמירה על Contact ו-Deal לתאימות לאחור
-model Contact {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?
-  phone     String?
-  company   String?
-  position  String?
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deals     Deal[]
-}
-
-model Deal {
-  id          String   @id @default(cuid())
-  title       String
-  value       Float    @default(0)
-  stage       String   @default("lead")
-  contactId   String?
-  contact     Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// ============ מערכת דינמית - אדמין מגדיר הכל ============
-
-// ישות - סוג רשומה (לקוח, אישור, מוצר...)
+// ישות דינמית - אדמין מגדיר
 model Entity {
   id          String   @id @default(cuid())
-  name        String   // שם בעברית
-  slug        String   @unique // מזהה (customers, certifications)
+  name        String
+  slug        String   @unique
   icon        String?
   order       Int      @default(0)
   createdAt   DateTime @default(now())
@@ -219,18 +32,18 @@ model Entity {
   records     DynamicRecord[]
 }
 
-// הגדרת שדה - אדמין מוסיף/משנה שדות
+// הגדרת שדה
 model FieldDefinition {
   id          String   @id @default(cuid())
   entityId    String
   entity      Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  name        String   // מזהה טכני (primaryPhone, settlement)
-  label       String   // תווית בעברית
+  name        String
+  label       String
   type        String   // text, number, email, phone, textarea, select, multiselect, date, datetime, checkbox, file, url, currency, user, relation
-  options     String?  // JSON - עבור select: [{value, label}], עבור relation: entityId
+  options     String?  // JSON
   required    Boolean  @default(false)
   order       Int      @default(0)
-  section     String?  // קבוצה (מידע על הלקוח, פרטי תרומה)
+  section     String?
   placeholder String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -238,12 +51,12 @@ model FieldDefinition {
   @@unique([entityId, name])
 }
 
-// רשומה דינמית - הנתונים בפורמט גמיש
+// רשומה דינמית
 model DynamicRecord {
   id          String   @id @default(cuid())
   entityId    String
   entity      Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  data        Json     // { fieldName: value, ... }
+  data        Json
   createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -253,24 +66,33 @@ model DynamicRecord {
 
 // קבצים מצורפים
 model RecordFile {
-  id              String   @id @default(cuid())
-  recordId        String
-  record          DynamicRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  id                String   @id @default(cuid())
+  recordId          String
+  record            DynamicRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
   fieldDefinitionId String?
-  fieldDefinition  FieldDefinition? @relation(fields: [fieldDefinitionId], references: [id], onDelete: SetNull)
-  filename        String
-  url             String
-  size            Int?
-  createdAt       DateTime @default(now())
+  fieldDefinition   FieldDefinition? @relation(fields: [fieldDefinitionId], references: [id], onDelete: SetNull)
+  filename          String
+  url               String
+  size              Int?
+  createdAt         DateTime @default(now())
 }
 
-// פעילות לרשומות דינמיות
+// פעילות לרשומות
 model DynamicActivity {
-  id        String   @id @default(cuid())
-  recordId  String
-  record    DynamicRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
-  type      String   // note, task, file
-  content   String?
+  id          String   @id @default(cuid())
+  recordId    String
+  record      DynamicRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  type        String
+  content     String?
   createdById String?
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+// תצוגות שמורות
+model SavedView {
+  id     String  @id @default(cuid())
+  name   String
+  filter String?
+  sort   String?
+  module String
 }

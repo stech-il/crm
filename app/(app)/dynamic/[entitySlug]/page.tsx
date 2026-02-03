@@ -1,4 +1,4 @@
-import DynamicListWrapper from "@/components/DynamicListWrapper";
+import DynamicList from "@/components/DynamicList";
 
 export default async function DynamicEntityPage({
   params,
@@ -6,5 +6,5 @@ export default async function DynamicEntityPage({
   params: Promise<{ entitySlug: string }>;
 }) {
   const { entitySlug } = await params;
-  return <DynamicListWrapper entitySlug={entitySlug} />;
+  return <DynamicList entitySlug={entitySlug} />;
 }

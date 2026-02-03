@@ -1,35 +1,35 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Users,
-  UserCircle,
-  Award,
-  ShoppingCart,
-  CheckSquare,
-  Package,
-  Briefcase,
-  Settings,
-} from "lucide-react";
+import { LayoutDashboard, Settings, Layers } from "lucide-react";
 import clsx from "clsx";
 
-const nav = [
-  { href: "/", label: "לוח בקרה", icon: LayoutDashboard },
-  { href: "/customers", label: "לקוחות", icon: Users },
-  { href: "/dynamic/dynamic-customers", label: "לקוחות דינמיים", icon: Users },
-  { href: "/certifications", label: "אישורי כשרות", icon: Award },
-  { href: "/orders", label: "הזמנות", icon: ShoppingCart },
-  { href: "/tasks", label: "משימות", icon: CheckSquare },
-  { href: "/products", label: "מוצרים", icon: Package },
-  { href: "/deals", label: "עסקאות", icon: Briefcase },
-  { href: "/contacts", label: "אנשי קשר", icon: UserCircle },
-  { href: "/admin", label: "ניהול שדות", icon: Settings },
-];
+type Entity = { id: string; name: string; slug: string; order: number };
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [entities, setEntities] = useState<Entity[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/entities")
+      .then((r) => r.json())
+      .then((list) => setEntities(Array.isArray(list) ? list : []))
+      .catch(() => setEntities([]));
+  }, []);
+
+  const nav = [
+    { href: "/", label: "לוח בקרה", icon: LayoutDashboard },
+    ...entities
+      .sort((a, b) => a.order - b.order)
+      .map((e) => ({
+        href: `/dynamic/${e.slug}`,
+        label: e.name,
+        icon: Layers,
+      })),
+    { href: "/admin", label: "ניהול", icon: Settings },
+  ];
 
   return (
     <aside className="fixed right-0 top-0 z-40 h-screen w-56 border-l border-slate-200 bg-white shadow-sm">
@@ -53,7 +53,7 @@ export default function Sidebar() {
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               )}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-5 w-5 shrink-0" />
               {item.label}
             </Link>
           );

@@ -1,87 +1,48 @@
-# CRM Cloud - מערכת CRM בענן
+# CRM - מערכת ריקה להתאמה אישית
 
-מערכת CRM מלאה בענן, מותאמת לפריסה ב-Render.
+מערכת CRM מינימלית בענן. **המערכת ריקה** – אתה מגדיר ישויות ושדות בהתאמה אישית דרך לוח הניהול.
 
-## פיצ'רים
+## מה כלול
 
-- **התחברות משתמשים** - הרשמה, התחברות, התנתקות
-- **לוח בקרה** - סטטיסטיקות, לקוחות, אישורי כשרות, משימות
-- **לקוחות** - רשימה, טפסים מורחבים, תצוגות שמורות
-- **אישורי כשרות** - ניהול אישורים למוצרים
-- **משימות, הזמנות, מוצרים** - מודולים מלאים
+- **התחברות** – הרשמה, התחברות, התנתקות
+- **לוח ניהול** – יצירת ישויות ושדות דינמיים
+- **ישויות דינמיות** – כל ישות עם שדות מותאמים (טקסט, מספר, תאריך, בחירה, קובץ, משתמש ועוד)
+- **רשומות** – יצירה, עריכה, צפייה – הכל דינמי לפי ההגדרות
 
 ## התקנה מקומית
 
 ```bash
-# התקנת תלויות
 npm install
 
-# יצירת קובץ .env עם:
+# צור .env עם:
 # DATABASE_URL=postgresql://user:password@localhost:5432/crm
 # NEXTAUTH_SECRET=מפתח-סודי-ארוך-לפחות-32-תווים
 # NEXTAUTH_URL=http://localhost:3000
 
-# יצירת טבלאות במסד הנתונים
 npx prisma db push
-
-# (אופציונלי) הוספת נתוני דמו
 npm run db:seed
-
-# הרצה בפיתוח
 npm run dev
 ```
 
 פתח [http://localhost:3000](http://localhost:3000)
 
-**משתמשי דמו** (אחרי `npm run db:seed`):
+**משתמש אדמין** (אחרי `npm run db:seed`):
 - אימייל: `admin@crm.com` | סיסמה: `123456`
-- אימייל: `eliezer@example.com` | סיסמה: `123456`
+
+## איך להתחיל
+
+1. התחבר עם המשתמש האדמין
+2. עבור ל**ניהול** (לוח הניהול)
+3. הוסף **ישות** – למשל "לקוחות", "פרויקטים", "מוצרים"
+4. הוסף **שדות** לכל ישות – שם, טלפון, אימייל, תאריך וכו'
+5. הישות תופיע בתפריט הצד – תוכל ליצור רשומות בהתאמה אישית
 
 ## פריסה ב-Render
 
-### אופציה 1: Blueprint (render.yaml)
-
-1. העלה את הפרויקט ל-GitHub
-2. ב-Render: **New** → **Blueprint**
-3. חבר את ה-repo - Render יקרא את `render.yaml` ויצור:
-   - Web Service (האפליקציה)
-   - PostgreSQL (מסד הנתונים)
-
-### אופציה 2: ידנית
-
-1. **יצירת PostgreSQL:**
-   - New → PostgreSQL
-   - העתק את ה-Connection String
-
-2. **יצירת Web Service:**
-   - New → Web Service
-   - חבר את ה-repo
-   - **Build Command:** `npm install && npx prisma generate && npm run build`
-   - **Start Command:** `npx prisma db push && npm start`
-   - **Environment:** הוסף:
-     - `DATABASE_URL` - Connection String מ-PostgreSQL
-     - `NEXTAUTH_SECRET` - מפתח סודי (לפחות 32 תווים)
-     - `NEXTAUTH_URL` - כתובת האתר (למשל https://your-app.onrender.com)
-
-## מבנה הפרויקט
-
-```
-├── app/
-│   ├── api/          # API routes
-│   ├── contacts/     # דף אנשי קשר
-│   ├── deals/        # דף עסקאות
-│   └── page.tsx      # לוח בקרה
-├── components/
-├── lib/
-│   └── db.ts         # Prisma client
-├── prisma/
-│   └── schema.prisma # מודלים
-└── render.yaml       # הגדרות Render
-```
+- **Build:** `npm install && npx prisma generate && npm run build`
+- **Start:** `npx prisma db push && npm start`
+- **Environment:** `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
 
 ## טכנולוגיות
 
-- **Next.js 14** - Full-stack React
-- **Prisma** - ORM ל-PostgreSQL
-- **Tailwind CSS** - עיצוב
-- **Render** - Hosting
+- Next.js 14, Prisma, PostgreSQL, Tailwind CSS, NextAuth
