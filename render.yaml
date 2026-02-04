@@ -3,7 +3,7 @@ services:
     name: crm-cloud
     runtime: node
     buildCommand: npm install && npx prisma generate && npx prisma db push --accept-data-loss && npm run build
-    startCommand: npx prisma db push --accept-data-loss && npm start
+    startCommand: npx prisma db push --accept-data-loss && npm run db:seed && npm start
     envVars:
       - key: DATABASE_URL
         fromDatabase:
