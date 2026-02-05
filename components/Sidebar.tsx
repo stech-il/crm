@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, Layers } from "lucide-react";
+import { LayoutDashboard, Settings, Users } from "lucide-react";
+import { getEntityIcon } from "../lib/entityIcons";
 import clsx from "clsx";
 
-type Entity = { id: string; name: string; slug: string; order: number };
+type Entity = { id: string; name: string; slug: string; icon?: string | null; order: number };
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -23,12 +24,16 @@ export default function Sidebar() {
     { href: "/", label: "לוח בקרה", icon: LayoutDashboard },
     ...entities
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .map((e) => ({
-        href: `/dynamic/${e.slug}`,
-        label: e.name,
-        icon: Layers,
-      })),
+      .map((e) => {
+        const Icon = getEntityIcon(e.icon);
+        return {
+          href: `/dynamic/${e.slug}`,
+          label: e.name,
+          icon: Icon,
+        };
+      }),
     { href: "/admin", label: "ניהול", icon: Settings },
+    { href: "/admin/users", label: "משתמשים", icon: Users },
   ];
 
   return (

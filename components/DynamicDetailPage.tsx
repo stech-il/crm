@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { Pencil, FileDown } from "lucide-react";
+import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
 
 type FieldDef = { id: string; name: string; label: string; type: string };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
@@ -69,7 +70,19 @@ export default function DynamicDetailPage({
                   ? data[f.name]
                     ? "כן"
                     : "לא"
-                  : String(data[f.name] ?? "—")}
+                  : isFileValue(data[f.name])
+                    ? (
+                        <a
+                          href={(data[f.name] as { url: string }).url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-primary-600 hover:underline"
+                        >
+                          <FileDown className="h-4 w-4" />
+                          {(data[f.name] as { filename?: string }).filename || "הורד קובץ"}
+                        </a>
+                      )
+                    : formatFieldValue(data[f.name])}
               </dd>
             </div>
           ))}

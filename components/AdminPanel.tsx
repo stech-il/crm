@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { Plus, Settings, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { FIELD_TYPES } from "../lib/fieldTypes";
+import { ENTITY_ICONS } from "../lib/entityIcons";
 import Modal from "./Modal";
 
 type FieldDef = {
@@ -20,6 +21,7 @@ type Entity = {
   id: string;
   name: string;
   slug: string;
+  icon?: string | null;
   fields: FieldDef[];
 };
 
@@ -30,13 +32,15 @@ export default function AdminPanel() {
 
   // מודלים
   const [entityModalOpen, setEntityModalOpen] = useState(false);
+  const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
   const [fieldModalOpen, setFieldModalOpen] = useState(false);
   const [fieldModalEntityId, setFieldModalEntityId] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<FieldDef | null>(null);
   const [deleteConfirmField, setDeleteConfirmField] = useState<FieldDef | null>(null);
+  const [deleteConfirmEntity, setDeleteConfirmEntity] = useState<Entity | null>(null);
 
   // טופס ישות
-  const [entityForm, setEntityForm] = useState({ name: "", slug: "" });
+  const [entityForm, setEntityForm] = useState({ name: "", slug: "", icon: "Layers" });
   const [entitySubmitting, setEntitySubmitting] = useState(false);
   const [entityError, setEntityError] = useState("");
 
@@ -50,6 +54,7 @@ export default function AdminPanel() {
   });
   const [fieldSubmitting, setFieldSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState("");
+  const fieldNameSeedRef = useRef<string | null>(null);
 
   const fetchEntities = () => {
     fetch("/api/admin/entities")
@@ -66,15 +71,54 @@ export default function AdminPanel() {
 
   useEffect(() => fetchEntities(), []);
 
-  const openEntityModal = () => {
-    setEntityForm({ name: "", slug: "" });
+  const openEntityModal = (entity?: Entity) => {
+    if (entity) {
+      setEditingEntity(entity);
+      setEntityForm({
+        name: entity.name,
+        slug: entity.slug,
+        icon: entity.icon || "Layers",
+      });
+    } else {
+      setEditingEntity(null);
+      setEntityForm({ name: "", slug: "", icon: "Layers" });
+    }
     setEntityError("");
     setEntityModalOpen(true);
+  };
+
+  const generateFieldName = (label: string, existingNames: string[]): string => {
+    const base = label
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9_\u0590-\u05FF]/g, "")
+      .replace(/[\u0590-\u05FF]+/g, "")
+      .toLowerCase();
+    let name = base ? base.replace(/_+/g, "_").replace(/^_|_$/g, "") : "";
+    if (!name || !/^[a-z]/.test(name)) {
+      if (!fieldNameSeedRef.current) {
+        fieldNameSeedRef.current = "field_" + Date.now().toString(36).slice(2, 10);
+      }
+      name = fieldNameSeedRef.current;
+    } else {
+      fieldNameSeedRef.current = null;
+    }
+    let finalName = name;
+    let i = 1;
+    while (existingNames.includes(finalName)) {
+      finalName = `${name}_${i}`;
+      i++;
+    }
+    return finalName;
   };
 
   const openFieldModal = (entityId: string, field?: FieldDef) => {
     setFieldModalEntityId(entityId);
     setEditingField(field ?? null);
+    fieldNameSeedRef.current = null;
+    const entity = entities.find((e) => e.id === entityId);
+    const existingNames = entity?.fields?.map((f) => f.name) ?? [];
+    const initialName = field ? field.name : generateFieldName("", existingNames);
     setFieldForm(
       field
         ? {
@@ -84,7 +128,13 @@ export default function AdminPanel() {
             section: field.section || "",
             required: field.required,
           }
-        : { name: "", label: "", type: "text", section: "", required: false }
+        : {
+            name: initialName,
+            label: "",
+            type: "text",
+            section: "",
+            required: false,
+          }
     );
     setFieldError("");
     setFieldModalOpen(true);
@@ -92,6 +142,7 @@ export default function AdminPanel() {
 
   const closeEntityModal = () => {
     setEntityModalOpen(false);
+    setEditingEntity(null);
     setEntityError("");
   };
 
@@ -100,6 +151,7 @@ export default function AdminPanel() {
     setFieldModalEntityId(null);
     setEditingField(null);
     setFieldError("");
+    fieldNameSeedRef.current = null;
   };
 
   const submitEntity = async (e: React.FormEvent) => {
@@ -113,33 +165,59 @@ export default function AdminPanel() {
       return;
     }
     try {
-      const res = await fetch("/api/admin/entities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: entityForm.name.trim(), slug }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "שגיאה");
+      const body = {
+        name: entityForm.name.trim(),
+        slug,
+        icon: entityForm.icon || null,
+      };
+      if (editingEntity) {
+        const res = await fetch(`/api/admin/entities/${editingEntity.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("שגיאה בעדכון");
+      } else {
+        const res = await fetch("/api/admin/entities", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("שגיאה ביצירת ישות");
+      }
       closeEntityModal();
       fetchEntities();
     } catch (err) {
-      setEntityError(err instanceof Error ? err.message : "שגיאה ביצירת ישות");
+      setEntityError(err instanceof Error ? err.message : "שגיאה");
     } finally {
       setEntitySubmitting(false);
     }
+  };
+
+  const deleteEntity = async () => {
+    if (!deleteConfirmEntity) return;
+    await fetch(`/api/admin/entities/${deleteConfirmEntity.id}`, { method: "DELETE" });
+    setDeleteConfirmEntity(null);
+    setExpandedEntity(null);
+    closeEntityModal();
+    fetchEntities();
   };
 
   const submitField = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldError("");
     if (!fieldModalEntityId) return;
-    const name = fieldForm.name.trim().replace(/\s+/g, "_");
-    if (!name || !fieldForm.label.trim()) {
-      setFieldError("נא למלא מזהה ותווית");
+    if (!fieldForm.label.trim()) {
+      setFieldError("נא למלא תווית");
       return;
     }
-    if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) {
-      setFieldError("מזהה חייב להתחיל באות ולהכיל רק אותיות, מספרים ו-_");
+    const entity = entities.find((e) => e.id === fieldModalEntityId);
+    const existingNames = entity?.fields?.map((f) => f.name) ?? [];
+    const name = editingField
+      ? fieldForm.name.trim().replace(/\s+/g, "_")
+      : generateFieldName(fieldForm.label, existingNames);
+    if (!name || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) {
+      setFieldError("לא ניתן ליצור מזהה אוטומטי. נסה תווית עם אותיות באנגלית.");
       return;
     }
     setFieldSubmitting(true);
@@ -202,13 +280,21 @@ export default function AdminPanel() {
           <Settings className="inline h-8 w-8 ml-2" />
           ניהול מערכת
         </h1>
-        <button
-          onClick={openEntityModal}
-          className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700"
-        >
-          <Plus className="h-4 w-4" />
-          הוסף ישות
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/users"
+            className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            משתמשים
+          </Link>
+          <button
+            onClick={openEntityModal}
+            className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700"
+          >
+            <Plus className="h-4 w-4" />
+            הוסף ישות
+          </button>
+        </div>
       </div>
 
       <p className="mb-6 text-slate-600">
@@ -238,6 +324,10 @@ export default function AdminPanel() {
               className="flex w-full items-center justify-between p-4 text-right hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-4">
+                {(() => {
+                  const IconComp = ENTITY_ICONS.find((i) => i.value === (entity.icon || "Layers"))?.Icon ?? ENTITY_ICONS[ENTITY_ICONS.length - 1].Icon;
+                  return <IconComp className="h-5 w-5 shrink-0 text-slate-500" />;
+                })()}
                 <span className="font-semibold text-slate-800">{entity.name}</span>
                 <span className="text-sm text-slate-500">/{entity.slug}</span>
                 <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600">
@@ -250,6 +340,22 @@ export default function AdminPanel() {
                 >
                   צפה ברשומות
                 </Link>
+                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => openEntityModal(entity)}
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                    title="ערוך ישות"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirmEntity(entity)}
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                    title="מחק ישות"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
               <ChevronDown
                 className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${expandedEntity === entity.id ? "rotate-180" : ""}`}
@@ -324,12 +430,36 @@ export default function AdminPanel() {
         ))}
       </div>
 
-      {/* מודל הוספת ישות */}
-      <Modal isOpen={entityModalOpen} onClose={closeEntityModal} title="הוספת ישות">
+      {/* מודל הוספת/עריכת ישות */}
+      <Modal
+        isOpen={entityModalOpen}
+        onClose={closeEntityModal}
+        title={editingEntity ? "עריכת ישות" : "הוספת ישות"}
+      >
         <form onSubmit={submitEntity} className="space-y-4">
           {entityError && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{entityError}</div>
           )}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">אייקון</label>
+            <div className="flex flex-wrap gap-2">
+              {ENTITY_ICONS.map(({ value, label, Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setEntityForm((f) => ({ ...f, icon: value }))}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                    entityForm.icon === value
+                      ? "border-primary-500 bg-primary-50 text-primary-700"
+                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">שם (עברית)</label>
             <input
@@ -366,10 +496,13 @@ export default function AdminPanel() {
                 }))
               }
               placeholder="customers"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-mono text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              disabled={!!editingEntity}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-mono text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-slate-100 disabled:text-slate-500"
               required
             />
-            <p className="mt-1 text-xs text-slate-500">אותיות קטנות, מספרים ומקף בלבד</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {editingEntity ? "מזהה לא ניתן לשינוי" : "אותיות קטנות, מספרים ומקף בלבד"}
+            </p>
           </div>
           <div className="flex gap-2 pt-2">
             <button
@@ -377,7 +510,11 @@ export default function AdminPanel() {
               disabled={entitySubmitting}
               className="flex-1 rounded-lg bg-primary-600 py-2.5 font-medium text-white hover:bg-primary-700 disabled:opacity-50"
             >
-              {entitySubmitting ? "יוצר..." : "צור ישות"}
+              {entitySubmitting
+                ? "שומר..."
+                : editingEntity
+                  ? "עדכן"
+                  : "צור ישות"}
             </button>
             <button
               type="button"
@@ -386,6 +523,18 @@ export default function AdminPanel() {
             >
               ביטול
             </button>
+            {editingEntity && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteConfirmEntity(editingEntity);
+                  closeEntityModal();
+                }}
+                className="rounded-lg border border-red-300 px-4 py-2.5 font-medium text-red-600 hover:bg-red-50"
+              >
+                מחק ישות
+              </button>
+            )}
           </div>
         </form>
       </Modal>
@@ -401,36 +550,40 @@ export default function AdminPanel() {
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{fieldError}</div>
           )}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">מזהה שדה</label>
-            <input
-              type="text"
-              value={fieldForm.name}
-              onChange={(e) =>
-                setFieldForm((f) => ({
-                  ...f,
-                  name: e.target.value.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, ""),
-                }))
-              }
-              placeholder="name"
-              disabled={!!editingField}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-mono text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-slate-100"
-              required
-            />
-            {!editingField && (
-              <p className="mt-1 text-xs text-slate-500">אנגלית, אותיות ומספרים. לא ניתן לשנות אחרי יצירה.</p>
-            )}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">תווית (עברית)</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">תווית (מה יוצג למשתמש)</label>
             <input
               type="text"
               value={fieldForm.label}
-              onChange={(e) => setFieldForm((f) => ({ ...f, label: e.target.value }))}
-              placeholder="שם מלא"
+              onChange={(e) => {
+                const label = e.target.value;
+                setFieldForm((f) => {
+                  const next = { ...f, label };
+                  if (!editingField && fieldModalEntityId) {
+                    const entity = entities.find((e) => e.id === fieldModalEntityId);
+                    const existingNames = entity?.fields?.map((f) => f.name) ?? [];
+                    next.name = generateFieldName(label, existingNames);
+                  }
+                  return next;
+                });
+              }}
+              placeholder="שם מלא, טלפון, אימייל..."
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               required
             />
+            {!editingField && fieldForm.name && (
+              <p className="mt-1.5 text-xs text-slate-500">
+                מזהה: <span className="font-mono font-medium text-slate-600">{fieldForm.name}</span>
+              </p>
+            )}
           </div>
+          {editingField && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">מזהה (טכני)</label>
+              <span className="block rounded-lg bg-slate-100 px-3 py-2.5 font-mono text-sm text-slate-600">
+                {fieldForm.name}
+              </span>
+            </div>
+          )}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">סוג שדה</label>
             <select
@@ -483,7 +636,7 @@ export default function AdminPanel() {
         </form>
       </Modal>
 
-      {/* מודל אישור מחיקה */}
+      {/* מודל אישור מחיקת שדה */}
       <Modal
         isOpen={!!deleteConfirmField}
         onClose={() => setDeleteConfirmField(null)}
@@ -503,6 +656,35 @@ export default function AdminPanel() {
               </button>
               <button
                 onClick={() => setDeleteConfirmField(null)}
+                className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium text-slate-600 hover:bg-slate-50"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* מודל אישור מחיקת ישות */}
+      <Modal
+        isOpen={!!deleteConfirmEntity}
+        onClose={() => setDeleteConfirmEntity(null)}
+        title="מחיקת ישות"
+      >
+        {deleteConfirmEntity && (
+          <div className="space-y-4">
+            <p className="text-slate-600">
+              האם למחוק את הישות &quot;{deleteConfirmEntity.name}&quot;? כל השדות והרשומות יימחקו. פעולה זו לא ניתנת לביטול.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={deleteEntity}
+                className="flex-1 rounded-lg bg-red-600 py-2.5 font-medium text-white hover:bg-red-700"
+              >
+                מחק
+              </button>
+              <button
+                onClick={() => setDeleteConfirmEntity(null)}
                 className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium text-slate-600 hover:bg-slate-50"
               >
                 ביטול

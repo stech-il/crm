@@ -1,7 +1,80 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import type { FieldDef } from "../lib/dynamicTypes";
+
+function FileUploadField({
+  value,
+  onChange,
+}: {
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const fileValue = value as { url?: string; filename?: string } | null | undefined;
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "שגיאה בהעלאה");
+      onChange({ url: data.url, filename: data.filename || file.name });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שגיאה בהעלאת קובץ");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <input
+        type="file"
+        onChange={handleFileChange}
+        disabled={uploading}
+        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm file:mr-4 file:rounded file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 disabled:opacity-50"
+      />
+      {uploading && (
+        <p className="flex items-center gap-2 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          מעלה קובץ...
+        </p>
+      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      {fileValue?.url && (
+        <div className="rounded-lg bg-slate-50 p-2">
+          <a
+            href={fileValue.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-primary-600 hover:underline"
+          >
+            {fileValue.filename || "צפה בקובץ"}
+          </a>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="mr-2 text-xs text-slate-500 hover:text-red-600"
+          >
+            הסר
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 type Props = {
   field: FieldDef;
@@ -147,14 +220,7 @@ export default function DynamicField({ field, value, onChange, users = [] }: Pro
         );
       case "file":
         return (
-          <input
-            type="file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) onChange({ name: file.name, size: file.size });
-            }}
-            className={inputClass}
-          />
+          <FileUploadField value={value} onChange={onChange} />
         );
       default:
         return (

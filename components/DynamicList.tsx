@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
+import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
 
 type FieldDef = { id: string; name: string; label: string; type: string };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
@@ -113,7 +114,11 @@ export default function DynamicList({ entitySlug }: Props) {
                       href={`/dynamic/${entitySlug}/${r.id}`}
                       className="font-medium text-primary-600 hover:underline"
                     >
-                      {String((r.data as Record<string, unknown>)[f.name] ?? "—")}
+                      {(() => {
+                        const val = (r.data as Record<string, unknown>)[f.name];
+                        if (isFileValue(val)) return val.filename || "קובץ";
+                        return formatFieldValue(val);
+                      })()}
                     </Link>
                   </td>
                 ))}
