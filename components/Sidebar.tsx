@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Settings, Users } from "lucide-react";
 import { getEntityIcon } from "../lib/entityIcons";
+import { usePolling } from "../lib/usePolling";
 import clsx from "clsx";
 
 type Entity = { id: string; name: string; slug: string; icon?: string | null; order: number };
@@ -13,12 +14,15 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [entities, setEntities] = useState<Entity[]>([]);
 
-  useEffect(() => {
+  const fetchEntities = useCallback(() => {
     fetch("/api/admin/entities")
       .then((r) => r.json())
       .then((list) => setEntities(Array.isArray(list) ? list : []))
       .catch(() => setEntities([]));
   }, []);
+
+  useEffect(() => fetchEntities(), []);
+  usePolling(fetchEntities);
 
   const nav = [
     { href: "/", label: "לוח בקרה", icon: LayoutDashboard },

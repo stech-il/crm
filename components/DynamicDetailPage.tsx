@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Pencil, FileDown } from "lucide-react";
-import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
+import { formatFieldValue, formatFieldValueForTitle, isFileValue } from "../lib/formatFieldValue";
+import { usePolling } from "../lib/usePolling";
 
 type FieldDef = { id: string; name: string; label: string; type: string };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
@@ -17,11 +17,10 @@ export default function DynamicDetailPage({
   entitySlug: string;
   recordId: string;
 }) {
-  const router = useRouter();
   const [entity, setEntity] = useState<Entity | null>(null);
   const [record, setRecord] = useState<DynamicRecordData | null>(null);
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     fetch(`/api/dynamic/${entitySlug}/${recordId}`)
       .then((r) => r.json())
       .then((res) => {
@@ -29,6 +28,18 @@ export default function DynamicDetailPage({
         setRecord(res.record);
       });
   }, [entitySlug, recordId]);
+
+  useEffect(() => fetchData(), [entitySlug, recordId]);
+  usePolling(fetchData, [entitySlug, recordId]);
+
+  useEffect(() => {
+    if (entity && record) {
+      const data = record.data as Record<string, unknown>;
+      const title = formatFieldValueForTitle(data[entity.fields[0]?.name]) || record.id.slice(0, 8) || "רשומה";
+      document.title = `${title} - ${entity.name} | CRM`;
+    }
+    return () => { document.title = "CRM"; };
+  }, [entity, record]);
 
   if (!entity || !record) {
     return (
@@ -48,7 +59,7 @@ export default function DynamicDetailPage({
             ← חזרה ל{entity.name}
           </Link>
           <h1 className="mt-2 text-2xl font-bold text-slate-800">
-            {String(data[entity.fields[0]?.name] ?? record.id.slice(0, 8) ?? "רשומה")}
+            {formatFieldValueForTitle(data[entity.fields[0]?.name]) || record.id.slice(0, 8) || "רשומה"}
           </h1>
         </div>
         <Link

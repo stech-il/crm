@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
+import { usePolling } from "../lib/usePolling";
 
 type FieldDef = { id: string; name: string; label: string; type: string };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
@@ -31,6 +32,7 @@ export default function DynamicList({ entitySlug }: Props) {
   };
 
   useEffect(() => fetchData(), [entitySlug, search]);
+  usePolling(fetchData, [entitySlug, search]);
 
   if (!entity) {
     if (loading) return <div className="p-8 animate-pulse h-64 bg-slate-200 rounded" />;

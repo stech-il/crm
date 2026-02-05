@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Settings, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { FIELD_TYPES } from "../lib/fieldTypes";
 import { ENTITY_ICONS } from "../lib/entityIcons";
+import { usePolling } from "../lib/usePolling";
 import Modal from "./Modal";
 
 type FieldDef = {
@@ -70,6 +71,7 @@ export default function AdminPanel() {
   };
 
   useEffect(() => fetchEntities(), []);
+  usePolling(fetchEntities);
 
   const openEntityModal = (entity?: Entity) => {
     if (entity) {

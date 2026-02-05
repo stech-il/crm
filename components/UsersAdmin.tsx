@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Users, Pencil, Trash2 } from "lucide-react";
+import { usePolling } from "../lib/usePolling";
 import Modal from "./Modal";
 
 type UserItem = {
@@ -32,6 +33,7 @@ export default function UsersAdmin() {
   };
 
   useEffect(() => fetchUsers(), []);
+  usePolling(fetchUsers);
 
   const openModal = (user?: UserItem) => {
     if (user) {

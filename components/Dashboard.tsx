@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { LayoutDashboard, Settings } from "lucide-react";
+import { usePolling } from "../lib/usePolling";
 
 export default function Dashboard() {
   const [data, setData] = useState<{ entitiesCount: number; recordsCount: number } | null>(null);
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     fetch("/api/dashboard")
       .then((r) => r.json())
       .then(setData);
   }, []);
+
+  useEffect(() => fetchData(), []);
+  usePolling(fetchData);
 
   if (!data) {
     return (

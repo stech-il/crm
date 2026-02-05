@@ -16,6 +16,20 @@ export function formatFieldValue(value: unknown): string {
 }
 
 /**
+ * מחזיר טקסט מתאים לכותרת (מעדיף filename על פני url)
+ */
+export function formatFieldValueForTitle(value: unknown): string {
+  if (value == null || value === "") return "";
+  if (typeof value === "object" && value !== null) {
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.filename === "string") return obj.filename;
+    if (typeof obj.name === "string") return obj.name;
+  }
+  const s = formatFieldValue(value);
+  return s === "—" ? "" : s;
+}
+
+/**
  * מחזיר האם הערך הוא קובץ (יש URL להורדה)
  */
 export function isFileValue(value: unknown): value is { url: string; filename?: string } {
