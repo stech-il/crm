@@ -30,7 +30,14 @@ export default function AdminPanel() {
   const fetchEntities = () => {
     fetch("/api/admin/entities")
       .then((r) => r.json())
-      .then(setEntities)
+      .then((list) => {
+        const arr = Array.isArray(list) ? list : [];
+        setEntities(arr);
+        // פתח את הישות הראשונה אוטומטית אם אין ישות פתוחה
+        if (arr.length > 0 && !expandedEntity) {
+          setExpandedEntity(arr[0].id);
+        }
+      })
       .finally(() => setLoading(false));
   };
 
@@ -49,10 +56,11 @@ export default function AdminPanel() {
   };
 
   const addField = async (entityId: string) => {
-    const name = prompt("מזהה שדה (אנגלית, לדוגמה: primaryPhone):");
-    const label = prompt("תווית (עברית):");
+    const typesList = FIELD_TYPES.map((t) => t.value).join(", ");
+    const name = prompt("מזהה שדה (אנגלית, לדוגמה: name או primaryPhone):");
+    const label = prompt("תווית בעברית (מה יוצג למשתמש):");
     const typeStr = prompt(
-      "סוג שדה (text, number, email, phone, textarea, select, date, checkbox, file, user):",
+      `סוג שדה:\n${typesList}\n\nהזן סוג (ברירת מחדל: text):`,
       "text"
     );
     const type = typeStr && FIELD_TYPES.some((t) => t.value === typeStr) ? typeStr : "text";
@@ -117,6 +125,18 @@ export default function AdminPanel() {
         כאן מגדירים ישויות (סוגי רשומות) ושדות. כל שדה ניתן להגדרה דינמית - טקסט, מספר, תאריך, בחירה מרשימה, העלאת קבצים ועוד.
       </p>
 
+      {entities.length === 0 && (
+        <div className="mb-6 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+          <p className="mb-4 text-slate-600">אין עדיין ישויות. לחץ על &quot;הוסף ישות&quot; כדי להתחיל.</p>
+          <button
+            onClick={addEntity}
+            className="rounded-lg bg-primary-600 px-6 py-3 font-medium text-white hover:bg-primary-700"
+          >
+            + הוסף ישות ראשונה
+          </button>
+        </div>
+      )}
+
       <div className="space-y-4">
         {entities.map((entity) => (
           <div
@@ -130,6 +150,9 @@ export default function AdminPanel() {
               <div className="flex items-center gap-4">
                 <span className="font-semibold text-slate-800">{entity.name}</span>
                 <span className="text-sm text-slate-500">/{entity.slug}</span>
+                <span className="text-xs text-slate-400">
+                  {entity.fields.length} שדות
+                </span>
                 <Link
                   href={`/dynamic/${entity.slug}`}
                   onClick={(e) => e.stopPropagation()}
@@ -139,7 +162,8 @@ export default function AdminPanel() {
                 </Link>
               </div>
               <ChevronDown
-                className={`h-5 w-5 transition-transform ${expandedEntity === entity.id ? "rotate-180" : ""}`}
+                className={`h-5 w-5 shrink-0 transition-transform ${expandedEntity === entity.id ? "rotate-180" : ""}`}
+                aria-label={expandedEntity === entity.id ? "סגור" : "פתח שדות"}
               />
             </button>
 
@@ -192,7 +216,15 @@ export default function AdminPanel() {
                   ))}
                 </ul>
                 {entity.fields.length === 0 && (
-                  <p className="py-4 text-center text-slate-500">אין שדות. הוסף שדה ראשון.</p>
+                  <div className="py-6 text-center">
+                    <p className="mb-4 text-slate-500">אין עדיין שדות. הוסף שדה כדי ליצור רשומות.</p>
+                    <button
+                      onClick={() => addField(entity.id)}
+                      className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                    >
+                      + הוסף שדה ראשון
+                    </button>
+                  </div>
                 )}
               </div>
             )}

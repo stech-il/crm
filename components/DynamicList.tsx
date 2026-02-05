@@ -33,10 +33,36 @@ export default function DynamicList({ entitySlug }: Props) {
 
   if (!entity) {
     if (loading) return <div className="p-8 animate-pulse h-64 bg-slate-200 rounded" />;
-    return <div className="p-8 text-slate-500">ישות לא נמצאה</div>;
+    return (
+      <div className="p-8">
+        <p className="text-slate-500">ישות לא נמצאה.</p>
+        <Link href="/admin" className="mt-4 inline-block text-primary-600 hover:underline">
+          ← חזרה לניהול
+        </Link>
+      </div>
+    );
   }
 
-  const displayFields = entity.fields.slice(0, 5);
+  if (!entity.fields || entity.fields.length === 0) {
+    return (
+      <div className="p-8">
+        <h1 className="mb-4 text-2xl font-bold text-slate-800">{entity.name}</h1>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+          <p className="text-amber-800">
+            אין שדות מוגדרים לישות זו. הוסף שדות בלוח הניהול כדי ליצור רשומות.
+          </p>
+          <Link
+            href="/admin"
+            className="mt-4 inline-block rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            עבור לניהול
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const displayFields = (entity.fields || []).slice(0, 5);
 
   return (
     <div className="p-8">

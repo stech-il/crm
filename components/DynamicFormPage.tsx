@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import DynamicForm from "./DynamicForm";
 import { normalizeEntity, type DynamicEntity } from "../lib/dynamicTypes";
 
@@ -56,6 +57,27 @@ export default function DynamicFormPage({
     return (
       <div className="p-8">
         <div className="animate-pulse h-64 rounded bg-slate-200" />
+      </div>
+    );
+  }
+
+  if (!entity.fields || entity.fields.length === 0) {
+    return (
+      <div className="p-8">
+        <h1 className="mb-4 text-2xl font-bold text-slate-800">
+          {recordId ? "עריכה" : "חדש"} - {entity.name}
+        </h1>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+          <p className="text-amber-800">
+            אין שדות מוגדרים. הוסף שדות בלוח הניהול לפני יצירת רשומות.
+          </p>
+          <Link
+            href="/admin"
+            className="mt-4 inline-block rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            עבור לניהול
+          </Link>
+        </div>
       </div>
     );
   }
