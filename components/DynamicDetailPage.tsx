@@ -6,7 +6,7 @@ import { Pencil, FileDown } from "lucide-react";
 import { formatFieldValue, formatFieldValueForTitle, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
 
-type FieldDef = { id: string; name: string; label: string; type: string };
+type FieldDef = { id: string; name: string; label: string; type: string; showInCard?: boolean };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
 type DynamicRecordData = { id: string; data: Record<string, unknown>; updatedAt: string };
 
@@ -73,7 +73,7 @@ export default function DynamicDetailPage({
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <dl className="grid gap-4 sm:grid-cols-2">
-          {entity.fields.map((f) => (
+          {entity.fields.filter((f) => f.showInCard !== false).map((f) => (
             <div key={f.id}>
               <dt className="text-sm font-medium text-slate-500">{f.label}</dt>
               <dd className="mt-1 text-slate-800">

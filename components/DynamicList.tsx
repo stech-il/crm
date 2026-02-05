@@ -6,7 +6,7 @@ import { Plus, Search } from "lucide-react";
 import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
 
-type FieldDef = { id: string; name: string; label: string; type: string };
+type FieldDef = { id: string; name: string; label: string; type: string; showInList?: boolean };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
 type DynamicRecordItem = { id: string; data: Record<string, unknown>; updatedAt: string };
 
@@ -65,7 +65,7 @@ export default function DynamicList({ entitySlug }: Props) {
     );
   }
 
-  const displayFields = (entity.fields || []).slice(0, 5);
+  const displayFields = (entity.fields || []).filter((f) => f.showInList !== false);
 
   return (
     <div className="p-8">

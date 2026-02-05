@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 
-const POLL_INTERVAL_MS = 8000; // 8 שניות
+const POLL_INTERVAL_MS = 2000; // 2 שניות - עדכון כמעט בזמן אמת
 
 /**
  * מפעיל רענון אוטומטי של נתונים כל כמה שניות.

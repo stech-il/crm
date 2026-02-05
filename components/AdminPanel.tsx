@@ -16,6 +16,9 @@ type FieldDef = {
   required: boolean;
   section: string | null;
   order: number;
+  showInList?: boolean;
+  showInCard?: boolean;
+  options?: string | null;
 };
 
 type Entity = {
@@ -52,6 +55,9 @@ export default function AdminPanel() {
     type: "text",
     section: "",
     required: false,
+    showInList: true,
+    showInCard: true,
+    optionsText: "",
   });
   const [fieldSubmitting, setFieldSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState("");
@@ -121,6 +127,16 @@ export default function AdminPanel() {
     const entity = entities.find((e) => e.id === entityId);
     const existingNames = entity?.fields?.map((f) => f.name) ?? [];
     const initialName = field ? field.name : generateFieldName("", existingNames);
+    const parseOptionsToText = (opts: string | null | undefined): string => {
+      if (!opts) return "";
+      try {
+        const arr = JSON.parse(opts);
+        if (!Array.isArray(arr)) return "";
+        return arr.map((o: { value?: string; label?: string }) => o.label ?? o.value ?? "").join("\n");
+      } catch {
+        return "";
+      }
+    };
     setFieldForm(
       field
         ? {
@@ -129,6 +145,9 @@ export default function AdminPanel() {
             type: field.type,
             section: field.section || "",
             required: field.required,
+            showInList: field.showInList !== false,
+            showInCard: field.showInCard !== false,
+            optionsText: parseOptionsToText(field.options),
           }
         : {
             name: initialName,
@@ -136,6 +155,9 @@ export default function AdminPanel() {
             type: "text",
             section: "",
             required: false,
+            showInList: true,
+            showInCard: true,
+            optionsText: "",
           }
     );
     setFieldError("");
@@ -213,6 +235,15 @@ export default function AdminPanel() {
       setFieldError("נא למלא תווית");
       return;
     }
+    const needsOptions = fieldForm.type === "select" || fieldForm.type === "multiselect";
+    const optionsArr = fieldForm.optionsText
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (needsOptions && optionsArr.length === 0) {
+      setFieldError("בשדה בחירה מרשימה/מרובה יש להזין לפחות אפשרות אחת");
+      return;
+    }
     const entity = entities.find((e) => e.id === fieldModalEntityId);
     const existingNames = entity?.fields?.map((f) => f.name) ?? [];
     const name = editingField
@@ -233,6 +264,9 @@ export default function AdminPanel() {
             type: fieldForm.type,
             section: fieldForm.section.trim() || null,
             required: fieldForm.required,
+            showInList: fieldForm.showInList,
+            showInCard: fieldForm.showInCard,
+            options: needsOptions ? JSON.stringify(optionsArr.map((t) => ({ value: t, label: t }))) : null,
           }),
         });
         if (!res.ok) throw new Error("שגיאה בעדכון");
@@ -246,6 +280,9 @@ export default function AdminPanel() {
             type: fieldForm.type,
             section: fieldForm.section.trim() || null,
             required: fieldForm.required,
+            showInList: fieldForm.showInList,
+            showInCard: fieldForm.showInCard,
+            options: needsOptions ? JSON.stringify(optionsArr.map((t) => ({ value: t, label: t }))) : null,
             order: 999,
           }),
         });
@@ -610,15 +647,50 @@ export default function AdminPanel() {
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             />
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={fieldForm.required}
-              onChange={(e) => setFieldForm((f) => ({ ...f, required: e.target.checked }))}
-              className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-            />
-            <span className="text-sm font-medium text-slate-700">שדה חובה</span>
-          </label>
+          {(fieldForm.type === "select" || fieldForm.type === "multiselect") && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                רשימת אפשרויות (אפשרות אחת בכל שורה)
+              </label>
+              <textarea
+                value={fieldForm.optionsText}
+                onChange={(e) => setFieldForm((f) => ({ ...f, optionsText: e.target.value }))}
+                placeholder={"ממתין\nפעיל\nהושלם"}
+                rows={5}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-mono text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              />
+              <p className="mt-1 text-xs text-slate-500">כתוב אפשרות אחת בכל שורה. לדוגמה: ממתין, פעיל, הושלם</p>
+            </div>
+          )}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={fieldForm.required}
+                onChange={(e) => setFieldForm((f) => ({ ...f, required: e.target.checked }))}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="text-sm font-medium text-slate-700">שדה חובה</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={fieldForm.showInList}
+                onChange={(e) => setFieldForm((f) => ({ ...f, showInList: e.target.checked }))}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="text-sm font-medium text-slate-700">מופיע בראשי הטבלה (רשימה)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={fieldForm.showInCard}
+                onChange={(e) => setFieldForm((f) => ({ ...f, showInCard: e.target.checked }))}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="text-sm font-medium text-slate-700">מופיע בכרטסת (לחיצה על שורה)</span>
+            </label>
+          </div>
           <div className="flex gap-2 pt-2">
             <button
               type="submit"
