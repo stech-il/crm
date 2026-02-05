@@ -44,6 +44,8 @@ npm run dev
 - **Start:** `npx prisma db push && npm start`
 - **Environment:** `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 
+**חשוב:** `NEXTAUTH_URL` חייב להיות כתובת האתר בפועל (למשל `https://crm-cloud.onrender.com`). אם הוא מוגדר כ-`http://localhost:3000`, ההתנתקות תפנה ל-localhost במקום למסך החיבור.
+
 ## העלאת קבצים (Cloudinary)
 
 הקבצים נשמרים בענן של Cloudinary. הרשם חינם ב-[cloudinary.com](https://cloudinary.com), צור Cloud, והעתק את הפרטים ל-.env. בלי הגדרה זו – שדות קובץ יציגו הודעת שגיאה.

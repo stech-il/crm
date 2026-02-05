@@ -13,6 +13,10 @@ services:
         value: production
       - key: NEXTAUTH_SECRET
         generateValue: true
+      # חשוב: NEXTAUTH_URL חייב להיות כתובת האתר בפועל (לא localhost)
+      # אחרי הדיפלוי - עדכן ב-Render Dashboard ל-URL האמיתי, למשל: https://crm-cloud.onrender.com
+      - key: NEXTAUTH_URL
+        value: https://crm-cloud.onrender.com
 
 databases:
   - name: crm-db
