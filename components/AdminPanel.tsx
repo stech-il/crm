@@ -288,7 +288,7 @@ export default function AdminPanel() {
             משתמשים
           </Link>
           <button
-            onClick={openEntityModal}
+            onClick={() => openEntityModal()}
             className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700"
           >
             <Plus className="h-4 w-4" />
@@ -305,7 +305,7 @@ export default function AdminPanel() {
         <div className="mb-6 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
           <p className="mb-6 text-slate-600">אין עדיין ישויות. התחל ביצירת ישות ראשונה.</p>
           <button
-            onClick={openEntityModal}
+            onClick={() => openEntityModal()}
             className="rounded-lg bg-primary-600 px-6 py-3 font-medium text-white shadow-sm hover:bg-primary-700"
           >
             + הוסף ישות ראשונה
