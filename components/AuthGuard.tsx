@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import InactivityTimeout from "./InactivityTimeout";
 
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
@@ -35,5 +36,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <InactivityTimeout timeoutMinutes={5}>
+      {children}
+    </InactivityTimeout>
+  );
 }
