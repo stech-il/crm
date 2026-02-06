@@ -67,6 +67,10 @@ export default function LoginForm() {
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-slate-500">
+          <Link href="/forgot-password" className="text-primary-600 hover:underline">
+            שכחתי סיסמה
+          </Link>
+          {" · "}
           אין לך חשבון?{" "}
           <Link href="/register" className="text-primary-600 hover:underline">
             הרשם

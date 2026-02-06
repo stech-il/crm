@@ -19,6 +19,15 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+// טוקן לאיפוס סיסמה
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
 // ישות דינמית - אדמין מגדיר
 model Entity {
   id          String   @id @default(cuid())

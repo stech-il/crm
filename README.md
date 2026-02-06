@@ -4,7 +4,7 @@
 
 ## מה כלול
 
-- **התחברות** – הרשמה, התחברות, התנתקות
+- **התחברות** – הרשמה, התחברות, התנתקות, שכחתי סיסמה
 - **לוח ניהול** – יצירת ישויות ושדות דינמיים
 - **ישויות דינמיות** – כל ישות עם שדות מותאמים (טקסט, מספר, תאריך, בחירה, קובץ, משתמש ועוד)
 - **רשומות** – יצירה, עריכה, צפייה – הכל דינמי לפי ההגדרות
@@ -42,9 +42,11 @@ npm run dev
 
 - **Build:** `npm install && npx prisma generate && npm run build`
 - **Start:** `npx prisma db push && npm start`
-- **Environment:** `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+- **Environment:** `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CLOUDINARY_*`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (לשכחתי סיסמה)
 
 **חשוב:** `NEXTAUTH_URL` חייב להיות כתובת האתר בפועל (למשל `https://crm-cloud.onrender.com`). אם הוא מוגדר כ-`http://localhost:3000`, ההתנתקות תפנה ל-localhost במקום למסך החיבור.
+
+**שגיאת "Cannot GET /login":** אם אתה מקבל שגיאה זו, נסה: (1) `npm run build` – וודא שהבנייה מצליחה; (2) וודא שאתה ניגש לכתובת הנכונה (למשל `https://yoursite.com/login` ולא רק `/login` בלי הדומיין).
 
 ## העלאת קבצים (Cloudinary)
 

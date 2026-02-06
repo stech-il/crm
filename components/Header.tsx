@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import { User, Settings, Bell, Search } from "lucide-react";
+import { User, Settings } from "lucide-react";
 
 export default function Header() {
   const { data: session } = useSession();
@@ -18,18 +18,13 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
-          <Search className="h-5 w-5" />
-        </button>
-        <button className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-            1
-          </span>
-        </button>
-        <button className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+        <Link
+          href="/admin"
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          title="הגדרות"
+        >
           <Settings className="h-5 w-5" />
-        </button>
+        </Link>
         <div className="mr-2 h-8 w-px bg-slate-200" />
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-600">
