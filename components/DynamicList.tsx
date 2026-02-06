@@ -119,7 +119,7 @@ export default function DynamicList({ entitySlug }: Props) {
                       {(() => {
                         const val = (r.data as Record<string, unknown>)[f.name];
                         if (isFileValue(val)) return val.filename || "קובץ";
-                        return formatFieldValue(val);
+                        return formatFieldValue(val, f.type);
                       })()}
                     </Link>
                   </td>

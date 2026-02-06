@@ -9,14 +9,17 @@ datasource db {
 
 // משתמשים
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?  @unique
-  password  String?  // bcrypt hash
-  role      String   @default("user") // admin, user
-  image     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String           @id @default(cuid())
+  name            String
+  email           String?          @unique
+  password        String?          // bcrypt hash
+  role            String           @default("user") // admin, user
+  image           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  createdRecords  DynamicRecord[]
+  tasks           RecordTask[]
+  callLogs        CallLog[]
 }
 
 // טוקן לאיפוס סיסמה
@@ -69,10 +72,41 @@ model DynamicRecord {
   entity      Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
   data        Json
   createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   activities  DynamicActivity[]
   files       RecordFile[]
+  tasks       RecordTask[]
+  callLogs    CallLog[]
+}
+
+// משימות לרשומה
+model RecordTask {
+  id          String         @id @default(cuid())
+  recordId    String
+  record      DynamicRecord  @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  title       String
+  done        Boolean        @default(false)
+  order       Int            @default(0)
+  createdById String?
+  createdBy   User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+}
+
+// לוג שיחות - לחיבור למערכת טלפונית (API)
+model CallLog {
+  id          String         @id @default(cuid())
+  recordId    String?
+  record      DynamicRecord? @relation(fields: [recordId], references: [id], onDelete: SetNull)
+  phoneNumber String
+  direction   String         // incoming, outgoing
+  duration    Int?           // שניות
+  notes       String?
+  createdById String?
+  createdBy   User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+  @@index([phoneNumber])
 }
 
 // קבצים מצורפים

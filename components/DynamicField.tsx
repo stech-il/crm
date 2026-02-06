@@ -174,6 +174,7 @@ export default function DynamicField({ field, value, onChange, users = [] }: Pro
           </select>
         );
       case "date":
+      case "date-hebrew":
         return (
           <input
             type="date"

@@ -7,6 +7,7 @@ export const FIELD_TYPES = [
   { value: "select", label: "בחירה מרשימה" },
   { value: "multiselect", label: "בחירה מרובה" },
   { value: "date", label: "תאריך" },
+  { value: "date-hebrew", label: "תאריך עברי" },
   { value: "datetime", label: "תאריך ושעה" },
   { value: "checkbox", label: "סימון" },
   { value: "file", label: "העלאת קובץ" },

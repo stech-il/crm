@@ -15,7 +15,13 @@ export async function GET(
 
     const record = await prisma.dynamicRecord.findFirst({
       where: { id, entityId: entity.id },
-      include: { activities: true, files: true },
+      include: {
+        activities: true,
+        files: true,
+        createdBy: { select: { id: true, name: true } },
+        tasks: { orderBy: { order: "asc" } },
+        callLogs: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
+      },
     });
     if (!record) return NextResponse.json({ error: "Record not found" }, { status: 404 });
 

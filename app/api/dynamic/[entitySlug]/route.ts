@@ -42,6 +42,8 @@ export async function POST(
 ) {
   const { entitySlug } = await params;
   try {
+    const { getSession } = await import("@/lib/auth");
+    const session = await getSession();
     const entity = await prisma.entity.findUnique({
       where: { slug: entitySlug },
       include: { fields: true },
@@ -50,7 +52,11 @@ export async function POST(
 
     const body = await request.json();
     const record = await prisma.dynamicRecord.create({
-      data: { entityId: entity.id, data: body.data || {} },
+      data: {
+        entityId: entity.id,
+        data: body.data || {},
+        createdById: (session?.user as { id?: string })?.id || null,
+      },
     });
     return NextResponse.json(record);
   } catch (error) {
