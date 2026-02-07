@@ -52,6 +52,25 @@ npm run dev
 
 הקבצים נשמרים בענן של Cloudinary. הרשם חינם ב-[cloudinary.com](https://cloudinary.com), צור Cloud, והעתק את הפרטים ל-.env. בלי הגדרה זו – שדות קובץ יציגו הודעת שגיאה.
 
-## טכנולוגיות
+## גיבוי יומי
 
-- Next.js 14, Prisma, PostgreSQL, Tailwind CSS, NextAuth
+המערכת כוללת API גיבוי ב-`/api/admin/backup`.
+
+### הגדרה
+
+1. הוסף ב-Render Environment: `BACKUP_SECRET=מפתח-סודי-ארוך` (לפחות 32 תווים)
+2. גיבוי ידני: `https://yoursite.com/api/admin/backup?secret=המפתח`
+3. גיבוי יומי אוטומטי – השתמש בשירות חיצוני:
+
+**cron-job.org (חינמי):**
+- צור חשבון ב-[cron-job.org](https://cron-job.org)
+- צור Cron Job: URL = `https://yoursite.com/api/admin/backup?secret=המפתח`
+- Schedule: כל יום ב-02:00
+- Notification: שלח את התוצאה למייל או שמור
+
+**Render PostgreSQL (תוכנית בתשלום):**
+- שדרוג ל-Render PostgreSQL בתשלום כולל גיבויים אוטומטיים יומיים
+
+### שיחזור
+
+קובץ הגיבוי הוא JSON. בעתיד ניתן להוסיף API שיחזור. לעת עתה שמור את הקבצים במקום מאובטח.

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { Plus, Settings, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { Plus, Settings, ChevronDown, Pencil, Trash2, Download } from "lucide-react";
 import { FIELD_TYPES } from "../lib/fieldTypes";
 import { ENTITY_ICONS } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
@@ -320,6 +320,14 @@ export default function AdminPanel() {
           ניהול מערכת
         </h1>
         <div className="flex gap-2">
+          <Link
+            href="/api/admin/backup"
+            target="_blank"
+            className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            <Download className="h-4 w-4" />
+            גיבוי
+          </Link>
           <Link
             href="/admin/users"
             className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
