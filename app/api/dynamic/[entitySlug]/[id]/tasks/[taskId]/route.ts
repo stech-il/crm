@@ -16,9 +16,12 @@ export async function PATCH(
   try {
     if (!(await verifyTask(id, taskId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const body = await req.json();
+    const data: { done?: boolean; title?: string } = {};
+    if (typeof body.done === "boolean") data.done = body.done;
+    if (typeof body.title === "string" && body.title.trim()) data.title = body.title.trim();
     const task = await prisma.recordTask.update({
       where: { id: taskId },
-      data: { done: body.done },
+      data,
     });
     return NextResponse.json(task);
   } catch {

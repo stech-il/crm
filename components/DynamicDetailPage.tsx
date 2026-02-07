@@ -29,6 +29,8 @@ export default function DynamicDetailPage({
   const [entity, setEntity] = useState<Entity | null>(null);
   const [record, setRecord] = useState<DynamicRecordData | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState("");
   const [newCallPhone, setNewCallPhone] = useState("");
   const [newCallNotes, setNewCallNotes] = useState("");
 
@@ -75,7 +77,30 @@ export default function DynamicDetailPage({
 
   const deleteTask = async (taskId: string) => {
     await fetch(`/api/dynamic/${entitySlug}/${recordId}/tasks/${taskId}`, { method: "DELETE" });
+    setEditingTaskId(null);
     fetchData();
+  };
+
+  const startEditTask = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditingTaskTitle(task.title);
+  };
+
+  const saveEditTask = async () => {
+    if (!editingTaskId || !editingTaskTitle.trim()) return;
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}/tasks/${editingTaskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: editingTaskTitle.trim() }),
+    });
+    setEditingTaskId(null);
+    setEditingTaskTitle("");
+    fetchData();
+  };
+
+  const cancelEditTask = () => {
+    setEditingTaskId(null);
+    setEditingTaskTitle("");
   };
 
   const addCall = async () => {
@@ -183,10 +208,37 @@ export default function DynamicDetailPage({
               >
                 {t.done && <Check className="h-4 w-4" />}
               </button>
-              <span className={`flex-1 ${t.done ? "text-slate-500 line-through" : ""}`}>{t.title}</span>
-              <button onClick={() => deleteTask(t.id)} className="p-1 text-slate-400 hover:text-red-600">
-                <Trash2 className="h-4 w-4" />
-              </button>
+              {editingTaskId === t.id ? (
+                <>
+                  <input
+                    type="text"
+                    value={editingTaskTitle}
+                    onChange={(e) => setEditingTaskTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEditTask();
+                      if (e.key === "Escape") cancelEditTask();
+                    }}
+                    className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+                    autoFocus
+                  />
+                  <button onClick={saveEditTask} className="rounded bg-primary-600 px-2 py-1 text-xs text-white hover:bg-primary-700">
+                    שמור
+                  </button>
+                  <button onClick={cancelEditTask} className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100">
+                    ביטול
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className={`flex-1 ${t.done ? "text-slate-500 line-through" : ""}`}>{t.title}</span>
+                  <button onClick={() => startEditTask(t)} className="p-1 text-slate-400 hover:text-primary-600" title="עריכה">
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => deleteTask(t.id)} className="p-1 text-slate-400 hover:text-red-600">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </>
+              )}
             </li>
           ))}
           {tasks.length === 0 && <p className="text-sm text-slate-500">אין משימות</p>}
