@@ -43,7 +43,7 @@ export async function validateApiKey(
 
   const keyHash = hashApiKey(rawKey);
 
-  const apiKey = await prisma.apiKey.findUnique({
+  const apiKey = await prisma.apiKey.findFirst({
     where: { keyHash },
   });
   if (!apiKey) return null;
