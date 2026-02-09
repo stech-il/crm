@@ -89,7 +89,7 @@ export async function POST(
     }
     try {
       const record = await prisma.dynamicRecord.create({
-        data: { entityId: entity.id, data, createdById },
+        data: { entityId: entity.id, data: data as object, createdById },
       });
       await createActivity(record.id, "created", null, createdById);
       await triggerWebhooks("record.created", entitySlug, record.id, data);
