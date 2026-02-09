@@ -40,8 +40,10 @@ npm run dev
 
 ## פריסה ב-Render
 
-- **Build:** `npm install && npx prisma generate && npm run build`
-- **Start:** `npx prisma db push && npm start`
+- **Build:** `npm install && npx prisma generate && npx prisma db push && npm run build && npm run db:seed`
+- **Start:** `cd .next/standalone && node server.js` (עם `output: 'standalone'`)
+
+חשוב: עם `output: 'standalone'` חייבים להריץ את `server.js` מתוך תיקיית standalone, לא `next start`.
 - **Environment:** `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CLOUDINARY_*`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (לשכחתי סיסמה)
 
 **חשוב:** `NEXTAUTH_URL` חייב להיות כתובת האתר בפועל (למשל `https://crm-cloud.onrender.com`). אם הוא מוגדר כ-`http://localhost:3000`, ההתנתקות תפנה ל-localhost במקום למסך החיבור.
