@@ -13,7 +13,7 @@ export async function GET() {
   try {
     const users = await prisma.user.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, email: true, role: true, image: true, createdAt: true, updatedAt: true },
+      select: { id: true, name: true, email: true, role: true, status: true, image: true, createdAt: true, updatedAt: true },
     });
     return NextResponse.json(users);
   } catch (error) {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       : null;
     // רק admin@crm.com יכול להיות אדמין - משתמשים חדשים תמיד רגילים
     const user = await prisma.user.create({
-      data: { name, email, password: hash, role: "user" },
+      data: { name, email, password: hash, role: "user", status: "approved" },
     });
     return NextResponse.json(excludePassword(user));
   } catch (error) {

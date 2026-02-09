@@ -14,12 +14,13 @@ export async function POST(request: NextRequest) {
     }
     const hash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, email, password: hash },
+      data: { name, email, password: hash, status: "pending" },
     });
     return NextResponse.json({
       id: user.id,
       name: user.name,
       email: user.email,
+      message: "ההרשמה בוצעה. חשבונך ממתין לאישור מנהל.",
     });
   } catch (error) {
     return NextResponse.json({ error: "שגיאה ביצירת משתמש" }, { status: 500 });

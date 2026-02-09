@@ -14,6 +14,7 @@ async function main() {
         email: "admin@crm.com",
         password: defaultPassword,
         role: "admin",
+        status: "approved",
       },
     });
     console.log("נוצר משתמש אדמין: admin@crm.com / 123456");

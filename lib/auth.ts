@@ -18,6 +18,9 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         });
         if (!user?.password) return null;
+        if (user.status === "pending") {
+          throw new Error("חשבונך ממתין לאישור מנהל. פנה למנהל המערכת.");
+        }
         const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) return null;
         return {

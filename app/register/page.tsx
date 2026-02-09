@@ -27,6 +27,7 @@ export default function RegisterPage() {
       setError(data.error || "שגיאה בהרשמה");
       return;
     }
+    alert(data.message || "ההרשמה בוצעה. חשבונך ממתין לאישור מנהל.");
     router.push("/login");
     router.refresh();
   };
@@ -35,6 +36,9 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-100">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
         <h1 className="mb-6 text-center text-2xl font-bold text-slate-800">הרשמה ל-CRM</h1>
+        <p className="mb-4 text-center text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
+          ההרשמה מחייבת אישור מנהל. אחרי שהמנהל יאשר את חשבונך, תוכל להתחבר.
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-600">שם מלא</label>

@@ -25,7 +25,7 @@ export default function LoginForm() {
     });
     setLoading(false);
     if (res?.error) {
-      setError("אימייל או סיסמה שגויים");
+      setError(res.error === "CredentialsSignin" ? "אימייל או סיסמה שגויים" : String(res.error));
       return;
     }
     router.push(callbackUrl);

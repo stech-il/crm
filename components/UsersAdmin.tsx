@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Users, Pencil, Trash2 } from "lucide-react";
+import { Plus, Users, Pencil, Trash2, CheckCircle } from "lucide-react";
 import { usePolling } from "../lib/usePolling";
 import Modal from "./Modal";
 
@@ -11,6 +11,7 @@ type UserItem = {
   name: string;
   email: string | null;
   role: string;
+  status?: string;
   createdAt: string;
 };
 
@@ -141,7 +142,7 @@ export default function UsersAdmin() {
       </div>
 
       <p className="mb-6 text-slate-600">
-        הוספה, עריכה ומחיקה של משתמשים במערכת. משתמשים עם תפקיד אדמין יכולים לגשת ללוח הניהול.
+        הוספה, עריכה ומחיקה של משתמשים. הרשמה מחייבת אישור – משתמשים עם סטטוס &quot;ממתין&quot; לא יכולים להתחבר עד שאישרת אותם.
       </p>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -150,6 +151,7 @@ export default function UsersAdmin() {
             <tr>
               <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600">שם</th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600">אימייל</th>
+              <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600">סטטוס</th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600">תפקיד</th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600">נוצר</th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600"></th>
@@ -160,6 +162,15 @@ export default function UsersAdmin() {
               <tr key={user.id} className="hover:bg-slate-50">
                 <td className="px-6 py-4 font-medium text-slate-800">{user.name}</td>
                 <td className="px-6 py-4 text-slate-600">{user.email || "—"}</td>
+                <td className="px-6 py-4">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      user.status === "pending" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {user.status === "pending" ? "ממתין לאישור" : "מאושר"}
+                  </span>
+                </td>
                 <td className="px-6 py-4">
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -174,6 +185,18 @@ export default function UsersAdmin() {
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-1">
+                    {user.status === "pending" && (
+                      <button
+                        onClick={async () => {
+                          await fetch(`/api/users/${user.id}/approve`, { method: "POST" });
+                          fetchUsers();
+                        }}
+                        className="rounded-lg p-2 text-emerald-600 hover:bg-emerald-50"
+                        title="אשר משתמש"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => openModal(user)}
                       className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
