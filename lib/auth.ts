@@ -25,17 +25,29 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           image: user.image,
+          role: user.role,
         };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        token.role = (user as { role?: string }).role;
+      }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) (session.user as { id: string }).id = token.id as string;
+      if (session.user) {
+        (session.user as { id: string; role?: string }).id = token.id as string;
+        let role = token.role as string | undefined;
+        if (!role && token.id) {
+          const u = await prisma.user.findUnique({ where: { id: token.id as string }, select: { role: true } });
+          role = u?.role;
+        }
+        (session.user as { id: string; role?: string }).role = role;
+      }
       return session;
     },
   },

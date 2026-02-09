@@ -20,6 +20,7 @@ model User {
   createdRecords  DynamicRecord[]
   tasks           RecordTask[]
   callLogs        CallLog[]
+  backups         Backup[]
 }
 
 // טוקן לאיפוס סיסמה
@@ -140,4 +141,13 @@ model SavedView {
   filter String?
   sort   String?
   module String
+}
+
+// גיבויים - רק אדמין רואה ומשחזר
+model Backup {
+  id          String   @id @default(cuid())
+  data        Json
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
 }

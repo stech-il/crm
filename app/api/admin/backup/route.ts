@@ -12,12 +12,23 @@ export async function GET(req: NextRequest) {
     const secret = process.env.BACKUP_SECRET;
     const providedSecret = req.nextUrl.searchParams.get("secret") || req.headers.get("x-backup-secret");
 
-    const isAdmin = session?.user && (await prisma.user.findUnique({
-      where: { id: (session.user as { id?: string }).id },
-      select: { role: true },
-    }))?.role === "admin";
+    let isAdmin = false;
+    if (session?.user) {
+      const userId = (session.user as { id?: string }).id;
+      const userEmail = session.user.email;
+      const user = userId
+        ? await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+        : userEmail
+          ? await prisma.user.findFirst({ where: { email: userEmail }, select: { role: true } })
+          : null;
+      isAdmin = user?.role === "admin";
+    }
 
-    if (!isAdmin && (!secret || providedSecret !== secret)) {
+    const allowedBySecret = !!(secret && providedSecret && providedSecret === secret);
+    if (!isAdmin && !allowedBySecret) {
+      if (session && !isAdmin) {
+        return NextResponse.json({ error: "Admin only" }, { status: 403 });
+      }
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

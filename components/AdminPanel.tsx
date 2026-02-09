@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { Plus, Settings, ChevronDown, Pencil, Trash2, Download } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Plus, Settings, ChevronDown, Pencil, Trash2, Database, RotateCcw } from "lucide-react";
 import { FIELD_TYPES } from "../lib/fieldTypes";
 import { ENTITY_ICONS } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
@@ -62,6 +63,9 @@ export default function AdminPanel() {
   const [fieldSubmitting, setFieldSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState("");
   const fieldNameSeedRef = useRef<string | null>(null);
+  const [backupCreating, setBackupCreating] = useState(false);
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as { role?: string })?.role === "admin";
 
   const fetchEntities = () => {
     fetch("/api/admin/entities")
@@ -320,14 +324,15 @@ export default function AdminPanel() {
           ניהול מערכת
         </h1>
         <div className="flex gap-2">
-          <Link
-            href="/api/admin/backup"
-            target="_blank"
-            className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-          >
-            <Download className="h-4 w-4" />
-            גיבוי
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/admin/backups"
+              className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              <Database className="h-4 w-4" />
+              גיבויים
+            </Link>
+          )}
           <Link
             href="/admin/users"
             className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
@@ -347,6 +352,44 @@ export default function AdminPanel() {
       <p className="mb-6 text-slate-600">
         הגדרת ישויות ושדות. כל שדה ניתן להגדרה דינמית – טקסט, מספר, תאריך, בחירה מרשימה ועוד.
       </p>
+
+      {isAdmin && (
+        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-slate-800">גיבוי בשרת ושחזור</h2>
+          <p className="mb-4 text-sm text-slate-600">
+            צור גיבוי ששומר בשרת, הורד גיבויים קיימים, או שחזר לנתונים מגיבוי קודם.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={async () => {
+                setBackupCreating(true);
+                try {
+                  const res = await fetch("/api/admin/backups", { method: "POST" });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error || "שגיאה");
+                  alert("הגיבוי נוצר בהצלחה");
+                } catch (err) {
+                  alert(err instanceof Error ? err.message : "שגיאה");
+                } finally {
+                  setBackupCreating(false);
+                }
+              }}
+              disabled={backupCreating}
+              className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+            >
+              <Database className="h-4 w-4" />
+              {backupCreating ? "יוצר גיבוי..." : "גיבוי בשרת"}
+            </button>
+            <Link
+              href="/admin/backups"
+              className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              <RotateCcw className="h-4 w-4" />
+              גיבויים ושחזור
+            </Link>
+          </div>
+        </div>
+      )}
 
       {entities.length === 0 && (
         <div className="mb-6 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">

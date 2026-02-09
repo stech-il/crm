@@ -52,25 +52,19 @@ npm run dev
 
 הקבצים נשמרים בענן של Cloudinary. הרשם חינם ב-[cloudinary.com](https://cloudinary.com), צור Cloud, והעתק את הפרטים ל-.env. בלי הגדרה זו – שדות קובץ יציגו הודעת שגיאה.
 
-## גיבוי יומי
+## גיבויים ושחזור (אדמין בלבד)
 
-המערכת כוללת API גיבוי ב-`/api/admin/backup`.
+רק מנהלים רואים את תפריט "גיבויים" ויכולים:
+- **ליצור גיבוי** – שומר במערכת
+- **להוריד** – קובץ JSON
+- **לשחזר** – מחליף את כל הנתונים (ישויות, רשומות, משימות, לוג שיחות) מנתוני הגיבוי
+- **למחוק** גיבוי
 
-### הגדרה
+### גיבוי יומי אוטומטי (cron)
 
-1. הוסף ב-Render Environment: `BACKUP_SECRET=מפתח-סודי-ארוך` (לפחות 32 תווים)
-2. גיבוי ידני: `https://yoursite.com/api/admin/backup?secret=המפתח`
-3. גיבוי יומי אוטומטי – השתמש בשירות חיצוני:
-
-**cron-job.org (חינמי):**
-- צור חשבון ב-[cron-job.org](https://cron-job.org)
-- צור Cron Job: URL = `https://yoursite.com/api/admin/backup?secret=המפתח`
-- Schedule: כל יום ב-02:00
-- Notification: שלח את התוצאה למייל או שמור
-
-**Render PostgreSQL (תוכנית בתשלום):**
-- שדרוג ל-Render PostgreSQL בתשלום כולל גיבויים אוטומטיים יומיים
-
-### שיחזור
-
-קובץ הגיבוי הוא JSON. בעתיד ניתן להוסיף API שיחזור. לעת עתה שמור את הקבצים במקום מאובטח.
+הוסף `BACKUP_SECRET` ב-Render. Cron יכול לקרוא ל:
+```
+POST https://yoursite.com/api/admin/backups
+Header: x-backup-secret: המפתח
+```
+זה יוצר גיבוי חדש ושמור במערכת. האדמין יוכל לראות ולשחזר.

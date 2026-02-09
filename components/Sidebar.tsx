@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, Users } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { LayoutDashboard, Settings, Users, Database } from "lucide-react";
 import { getEntityIcon } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
 import clsx from "clsx";
@@ -12,6 +13,8 @@ type Entity = { id: string; name: string; slug: string; icon?: string | null; or
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as { role?: string })?.role === "admin";
   const [entities, setEntities] = useState<Entity[]>([]);
 
   const fetchEntities = useCallback(() => {
@@ -38,6 +41,7 @@ export default function Sidebar() {
       }),
     { href: "/admin", label: "ניהול", icon: Settings },
     { href: "/admin/users", label: "משתמשים", icon: Users },
+    ...(isAdmin ? [{ href: "/admin/backups", label: "גיבויים", icon: Database }] : []),
   ];
 
   return (
