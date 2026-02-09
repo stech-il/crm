@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy, Archive, ArchiveRestore } from "lucide-react";
+import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy, Archive, ArchiveRestore, Printer, Link2 } from "lucide-react";
 import Modal from "./Modal";
 import { formatFieldValue, formatFieldValueForTitle, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
@@ -54,6 +54,7 @@ export default function DynamicDetailPage({
   const [newCallNotes, setNewCallNotes] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const router = useRouter();
 
   const fetchData = useCallback(() => {
@@ -188,6 +189,20 @@ export default function DynamicDetailPage({
     router.push(`/dynamic/${entitySlug}`);
   };
 
+  const deleteNote = async (noteId: string) => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}/notes/${noteId}`, { method: "DELETE" });
+    fetchData();
+  };
+
+  const copyLink = () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    navigator.clipboard.writeText(url);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const printRecord = () => window.print();
+
   if (!entity || !record) {
     return (
       <div className="p-8">
@@ -249,6 +264,22 @@ export default function DynamicDetailPage({
               ארכב
             </button>
           )}
+          <button
+            onClick={copyLink}
+            className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium ${linkCopied ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-slate-300 text-slate-600 hover:bg-slate-50"}`}
+            title="העתק קישור"
+          >
+            <Link2 className="h-4 w-4" />
+            {linkCopied ? "הועתק!" : "העתק קישור"}
+          </button>
+          <button
+            onClick={printRecord}
+            className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            title="הדפס"
+          >
+            <Printer className="h-4 w-4" />
+            הדפס
+          </button>
           <button
             onClick={() => setShowDeleteModal(true)}
             className="flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
@@ -448,12 +479,17 @@ export default function DynamicDetailPage({
         </div>
         <ul className="space-y-2">
           {notes.map((n) => (
-            <li key={n.id} className="rounded-lg bg-slate-50 p-3 text-sm">
-              <p className="text-slate-800 whitespace-pre-wrap">{n.content}</p>
-              <span className="text-slate-400 text-xs mt-1 block">
-                {new Date(n.createdAt).toLocaleString("he-IL")}
-                {n.createdBy?.name && ` · ${n.createdBy.name}`}
-              </span>
+            <li key={n.id} className="flex items-start justify-between gap-2 rounded-lg bg-slate-50 p-3 text-sm">
+              <div className="min-w-0 flex-1">
+                <p className="text-slate-800 whitespace-pre-wrap">{n.content}</p>
+                <span className="text-slate-400 text-xs mt-1 block">
+                  {new Date(n.createdAt).toLocaleString("he-IL")}
+                  {n.createdBy?.name && ` · ${n.createdBy.name}`}
+                </span>
+              </div>
+              <button onClick={() => deleteNote(n.id)} className="p-1 text-slate-400 hover:text-red-600 shrink-0" title="מחק הערה">
+                <Trash2 className="h-4 w-4" />
+              </button>
             </li>
           ))}
           {notes.length === 0 && <p className="text-sm text-slate-500">אין הערות</p>}

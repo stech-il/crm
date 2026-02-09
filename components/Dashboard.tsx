@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Settings, Plus, ArrowLeft, Users, FileText } from "lucide-react";
+import { LayoutDashboard, Settings, Plus, ArrowLeft, Users, FileText, AlertCircle } from "lucide-react";
 import { getEntityIcon } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
 
@@ -14,9 +14,13 @@ type EntitySummary = {
   recordsCount: number;
 };
 
+type OverdueTask = { id: string; title: string; dueDate: string | null; recordId: string; entitySlug?: string; entityName?: string };
+
 type DashboardData = {
   entitiesCount: number;
   recordsCount: number;
+  overdueTasksCount?: number;
+  overdueTasks?: OverdueTask[];
   entities: EntitySummary[];
 };
 
@@ -82,6 +86,30 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+            {(data.overdueTasksCount ?? 0) > 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                    <AlertCircle className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-amber-700">משימות באיחור</p>
+                    <p className="text-2xl font-bold text-amber-800">{data.overdueTasksCount}</p>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
+                  {data.overdueTasks?.slice(0, 5).map((t) => (
+                    <Link
+                      key={t.id}
+                      href={t.entitySlug ? `/dynamic/${t.entitySlug}/${t.recordId}` : "#"}
+                      className="block text-sm text-amber-800 hover:underline truncate"
+                    >
+                      {t.title} {t.entityName && `– ${t.entityName}`}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
             <Link
               href="/admin"
               className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors hover:border-primary-200 hover:bg-primary-50/50"

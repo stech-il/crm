@@ -20,6 +20,8 @@ export async function GET(
     const sortJson = searchParams.get("sort");
     const format = searchParams.get("format");
     const includeArchived = searchParams.get("archived") === "1";
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(10, parseInt(searchParams.get("limit") || "25", 10)));
 
     const where: { entityId: string; isArchived?: boolean } = { entityId: entity.id };
     if (!includeArchived) where.isArchived = false;
@@ -78,6 +80,8 @@ export async function GET(
       }
     }
 
+    const totalCount = records.length;
+
     if (format === "csv") {
       const fields = entity.fields.filter((f) => f.showInList !== false);
       const headers = ["id", ...fields.map((f) => f.label), "updatedAt"];
@@ -104,7 +108,9 @@ export async function GET(
       });
     }
 
-    return NextResponse.json({ entity, records });
+    const offset = (page - 1) * limit;
+    const paginatedRecords = records.slice(offset, offset + limit);
+    return NextResponse.json({ entity, records: paginatedRecords, totalCount, page, totalPages: Math.ceil(totalCount / limit) });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch records" }, { status: 500 });
   }

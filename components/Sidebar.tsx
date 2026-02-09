@@ -45,7 +45,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="fixed right-0 top-0 z-40 h-screen w-56 border-l border-slate-200 bg-white shadow-sm">
+    <aside className="fixed right-0 top-0 z-40 h-screen w-56 border-l border-slate-200 bg-white shadow-sm print:hidden">
       <div className="flex h-16 items-center justify-center border-b border-slate-200">
         <span className="text-xl font-bold text-primary-600">CRM</span>
       </div>

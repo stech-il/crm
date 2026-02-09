@@ -30,6 +30,11 @@ export default function DynamicList({ entitySlug }: Props) {
   const [viewMode, setViewMode] = useState<"table" | "pipeline">("table");
   const [pipelineField, setPipelineField] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
@@ -39,8 +44,10 @@ export default function DynamicList({ entitySlug }: Props) {
     }
     if (sortField) p.set("sort", JSON.stringify({ field: sortField, dir: sortDir }));
     if (showArchived) p.set("archived", "1");
+    p.set("page", String(page));
+    p.set("limit", "25");
     return p.toString();
-  }, [search, filterField, filterValue, sortField, sortDir, showArchived]);
+  }, [search, filterField, filterValue, sortField, sortDir, showArchived, page]);
 
   const fetchData = useCallback(() => {
     const qs = buildParams();
@@ -49,12 +56,15 @@ export default function DynamicList({ entitySlug }: Props) {
       .then((res) => {
         setEntity(res.entity || null);
         setRecords(res.records || []);
+        setTotalCount(res.totalCount ?? res.records?.length ?? 0);
+        setTotalPages(res.totalPages ?? 1);
         setLoading(false);
       });
   }, [entitySlug, buildParams]);
 
   useEffect(() => fetchData(), [fetchData]);
   usePolling(fetchData, [entitySlug, buildParams]);
+  useEffect(() => setPage(1), [search, filterField, filterValue, showArchived]);
 
   const fetchViews = useCallback(() => {
     fetch(`/api/saved-views?module=${entitySlug}`)
@@ -128,6 +138,31 @@ export default function DynamicList({ entitySlug }: Props) {
     if (recordId) moveRecordToColumn(recordId, colValue);
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === records.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(records.map((r) => r.id)));
+  };
+
+  const bulkArchive = async () => {
+    if (selectedIds.size === 0) return;
+    await fetch(`/api/dynamic/${entitySlug}/bulk-archive`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: Array.from(selectedIds) }),
+    });
+    setSelectedIds(new Set());
+    fetchData();
+  };
+
   if (!entity) {
     if (loading) return <div className="p-8 animate-pulse h-64 bg-slate-200 rounded" />;
     return (
@@ -196,7 +231,7 @@ export default function DynamicList({ entitySlug }: Props) {
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">
-          {entity.name} ({records.length})
+          {entity.name} ({totalCount})
         </h1>
         <Link
           href={`/dynamic/${entitySlug}/new`}
@@ -260,6 +295,12 @@ export default function DynamicList({ entitySlug }: Props) {
             <Bookmark className="h-4 w-4" />
           </button>
         </div>
+        {!showArchived && selectedIds.size > 0 && (
+          <button onClick={bulkArchive} className="flex items-center gap-1 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">
+            <Archive className="h-4 w-4" />
+            ארכב ({selectedIds.size})
+          </button>
+        )}
         <button onClick={exportCsv} className="flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
           <Download className="h-4 w-4" />
           ייצוא CSV
@@ -322,6 +363,20 @@ export default function DynamicList({ entitySlug }: Props) {
         </div>
       )}
 
+      {viewMode === "table" && !showArchived && (
+        <div className="mb-4 flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={records.length > 0 && selectedIds.size === records.length}
+              onChange={toggleSelectAll}
+              className="rounded border-slate-300"
+            />
+            בחר הכל
+          </label>
+        </div>
+      )}
+
       {viewMode === "pipeline" && pipelineField ? (
         <div className="flex gap-4 overflow-x-auto pb-4">
           {pipelineColumns.map((col) => (
@@ -368,6 +423,16 @@ export default function DynamicList({ entitySlug }: Props) {
         <table className="w-full">
           <thead className="bg-slate-50">
             <tr>
+              {!showArchived && (
+                <th className="px-4 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={records.length > 0 && selectedIds.size === records.length}
+                    onChange={toggleSelectAll}
+                    className="rounded border-slate-300"
+                  />
+                </th>
+              )}
               {displayFields.map((f) => (
                 <th key={f.id} className="px-6 py-4 text-right text-sm font-semibold text-slate-600">
                   <button
@@ -393,6 +458,16 @@ export default function DynamicList({ entitySlug }: Props) {
           <tbody className="divide-y divide-slate-200">
             {records.map((r) => (
               <tr key={r.id} className="hover:bg-slate-50">
+                {!showArchived && (
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(r.id)}
+                      onChange={() => toggleSelect(r.id)}
+                      className="rounded border-slate-300"
+                    />
+                  </td>
+                )}
                 {displayFields.map((f) => (
                   <td key={f.id} className="px-6 py-4">
                     <Link
@@ -418,6 +493,28 @@ export default function DynamicList({ entitySlug }: Props) {
           <div className="py-16 text-center text-slate-500">אין רשומות</div>
         )}
       </div>
+      )}
+
+      {viewMode === "table" && totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="rounded-lg border border-slate-300 px-3 py-1 text-sm disabled:opacity-50"
+          >
+            ←
+          </button>
+          <span className="text-sm text-slate-600">
+            עמוד {page} מתוך {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="rounded-lg border border-slate-300 px-3 py-1 text-sm disabled:opacity-50"
+          >
+            →
+          </button>
+        </div>
       )}
     </div>
   );

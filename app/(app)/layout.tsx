@@ -12,7 +12,7 @@ export default function AppLayout({
       <div className="flex min-h-screen flex-col">
         <Header />
         <div className="flex flex-1">
-          <main className="flex-1 mr-56">{children}</main>
+          <main className="flex-1 mr-56 print:mr-0">{children}</main>
           <Sidebar />
         </div>
       </div>
