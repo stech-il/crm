@@ -204,3 +204,70 @@ model Backup {
   createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 }
+
+// אינטגרציות - חיבור למערכות חיצוניות (Twilio, SendGrid, וכו')
+model Integration {
+  id          String   @id @default(cuid())
+  type        String   // twilio, sendgrid, webhook, zapier, slack, etc.
+  name        String
+  isActive    Boolean  @default(true)
+  credentials Json     // מוצפן - API keys, tokens
+  config      Json     @default("{}") // הגדרות נוספות (מספר טלפון, etc.)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  logs        IntegrationLog[]
+}
+
+// לוג קריאות לאינטגרציות
+model IntegrationLog {
+  id             String      @id @default(cuid())
+  integrationId  String
+  integration    Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  action         String      // send_sms, send_email, webhook_call, etc.
+  status         String      // success, error
+  details        Json?       // תגובה, שגיאה
+  createdAt      DateTime    @default(now())
+  @@index([integrationId, createdAt])
+}
+
+// Webhooks - שליחת אירועים ל-URL חיצוני
+model Webhook {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  secret      String?  // להחתמת payload (HMAC)
+  events      String   // JSON: ["record.created", "record.updated", ...]
+  isActive    Boolean  @default(true)
+  entitySlug  String?  // null = כל הישויות
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Audit Log - מעקב פעולות חשובות
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  userEmail  String?
+  action     String   // record.create, record.update, record.delete, user.login, etc.
+  entitySlug String?
+  recordId   String?
+  details    Json?    // שינויים, meta
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+// API Keys - גישה חיצונית ל-API
+model ApiKey {
+  id          String   @id @default(cuid())
+  name        String
+  keyHash     String   // hash של המפתח (לא המפתח עצמו)
+  keyPrefix   String   // 4 תווים ראשונים להצגה
+  permissions String   // JSON: ["records:read", "records:write", ...]
+  lastUsedAt  DateTime?
+  expiresAt  DateTime?
+  createdAt   DateTime @default(now())
+  @@unique([keyPrefix])
+}

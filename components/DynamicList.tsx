@@ -502,7 +502,18 @@ export default function DynamicList({ entitySlug }: Props) {
                       {new Date(r.updatedAt).toLocaleDateString("he-IL")}
                     </p>
                   </Link>
-                  <p className="text-xs text-slate-400 mt-1">גרור לשינוי סטטוס</p>
+                  <div className="mt-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <select
+                      value={String((r.data as Record<string, unknown>)[pipelineField] ?? "")}
+                      onChange={(e) => quickStatusChange(r.id, pipelineField, e.target.value)}
+                      className="flex-1 rounded border border-slate-200 px-2 py-1 text-xs"
+                    >
+                      {getPipelineColumns().map((col) => (
+                        <option key={col} value={col}>{col || "(ללא ערך)"}</option>
+                      ))}
+                    </select>
+                    <span className="text-xs text-slate-400 shrink-0">גרור</span>
+                  </div>
                   </div>
                 )) ?? []}
               </div>

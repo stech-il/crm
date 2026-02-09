@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Plus, Settings, ChevronDown, Pencil, Trash2, Database, RotateCcw, Tag } from "lucide-react";
+import { Plus, Settings, ChevronDown, Pencil, Trash2, Database, RotateCcw, Tag, Zap, Webhook, FileText, Key } from "lucide-react";
 import { FIELD_TYPES } from "../lib/fieldTypes";
 import { ENTITY_ICONS } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
@@ -335,13 +335,13 @@ export default function AdminPanel() {
         </h1>
         <div className="flex gap-2">
           {isAdmin && (
-            <Link
-              href="/admin/backups"
-              className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-            >
-              <Database className="h-4 w-4" />
-              גיבויים
-            </Link>
+            <>
+              <Link href="/admin/backups" className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"><Database className="h-4 w-4" /> גיבויים</Link>
+              <Link href="/admin/integrations" className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"><Zap className="h-4 w-4" /> אינטגרציות</Link>
+              <Link href="/admin/webhooks" className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"><Webhook className="h-4 w-4" /> Webhooks</Link>
+              <Link href="/admin/audit" className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"><FileText className="h-4 w-4" /> לוג פעולות</Link>
+              <Link href="/admin/api-keys" className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"><Key className="h-4 w-4" /> מפתחות API</Link>
+            </>
           )}
           <Link
             href="/admin/users"

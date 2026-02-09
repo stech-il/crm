@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { getSession } from "@/lib/auth";
 import { createActivity } from "@/lib/activity";
+import { triggerWebhooks } from "@/lib/webhooks";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(
   _request: NextRequest,
@@ -48,15 +50,31 @@ export async function PATCH(
     const body = await request.json();
     const session = await getSession();
     const createdById = (session?.user as { id?: string })?.id || null;
+    const userEmail = (session?.user as { email?: string })?.email;
+
+    const existing = await prisma.dynamicRecord.findUnique({ where: { id } });
+    const previousData = existing?.data as Record<string, unknown> | undefined;
+
     const updateData: { data?: object; isArchived?: boolean; assignedToId?: string | null; updatedAt: Date } = { updatedAt: new Date() };
     if (body.data !== undefined) updateData.data = body.data;
     if (typeof body.isArchived === "boolean") updateData.isArchived = body.isArchived;
     if (body.assignedToId !== undefined) updateData.assignedToId = body.assignedToId || null;
+
     const record = await prisma.dynamicRecord.update({
       where: { id },
       data: updateData,
     });
     await createActivity(record.id, "updated", null, createdById);
+    await triggerWebhooks("record.updated", entitySlug, record.id, record.data as Record<string, unknown>, previousData);
+    if (body.isArchived === true) await triggerWebhooks("record.archived", entitySlug, record.id, record.data as Record<string, unknown>);
+    await logAudit({
+      userId: createdById ?? undefined,
+      userEmail: userEmail ?? undefined,
+      action: "record.update",
+      entitySlug,
+      recordId: record.id,
+    });
+
     return NextResponse.json(record);
   } catch (error) {
     return NextResponse.json({ error: "Failed to update record" }, { status: 500 });
@@ -74,14 +92,22 @@ export async function DELETE(
 
     const { searchParams } = new URL(request.url);
     const permanent = searchParams.get("permanent") === "1";
+    const session = await getSession();
+    const userId = (session?.user as { id?: string })?.id;
 
     if (permanent) {
+      const rec = await prisma.dynamicRecord.findUnique({ where: { id } });
       await prisma.dynamicRecord.delete({ where: { id } });
+      await triggerWebhooks("record.deleted", entitySlug, id, rec?.data as Record<string, unknown>);
+      await logAudit({ userId, action: "record.delete", entitySlug, recordId: id });
     } else {
       await prisma.dynamicRecord.update({
         where: { id },
         data: { isArchived: true, updatedAt: new Date() },
       });
+      const rec = await prisma.dynamicRecord.findUnique({ where: { id } });
+      await triggerWebhooks("record.archived", entitySlug, id, rec?.data as Record<string, unknown>);
+      await logAudit({ userId, action: "record.archive", entitySlug, recordId: id });
     }
     return NextResponse.json({ success: true });
   } catch (error) {

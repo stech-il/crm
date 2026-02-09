@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/db";
 import { createActivity } from "@/lib/activity";
+import { triggerWebhooks } from "@/lib/webhooks";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(
   request: NextRequest,
@@ -149,6 +151,14 @@ export async function POST(
       },
     });
     await createActivity(record.id, "created", null, createdById);
+    await triggerWebhooks("record.created", entitySlug, record.id, record.data as Record<string, unknown>);
+    await logAudit({
+      userId: createdById ?? undefined,
+      action: "record.create",
+      entitySlug,
+      recordId: record.id,
+      details: { entity: entity.name },
+    });
 
     if (copyTasks && sourceRecordId) {
       const tasks = await prisma.recordTask.findMany({
