@@ -73,7 +73,7 @@ export default function Dashboard() {
                   <LayoutDashboard className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-500">ישויות</p>
+                  <p className="text-sm font-medium text-slate-500">כרטסאות</p>
                   <p className="text-2xl font-bold text-slate-800">{data.entitiesCount}</p>
                 </div>
               </div>
@@ -150,10 +150,10 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* גרף רשומות לפי ישות */}
+          {/* גרף רשומות לפי כרטסת */}
           {data.entities.length > 0 && (
             <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-slate-800">רשומות לפי ישות</h2>
+              <h2 className="mb-4 text-lg font-semibold text-slate-800">רשומות לפי כרטסת</h2>
               <div className="space-y-2">
                 {data.entities.map((e) => {
                   const max = Math.max(...data.entities.map((x) => x.recordsCount), 1);
@@ -175,7 +175,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* כרטיסי ישויות */}
+          {/* כרטיסי כרטסאות */}
           <div>
             <h2 className="mb-4 text-lg font-semibold text-slate-800">גישה מהירה</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -207,7 +207,7 @@ export default function Dashboard() {
                 className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-slate-500 transition-colors hover:border-primary-300 hover:bg-primary-50/30 hover:text-primary-600"
               >
                 <Plus className="h-6 w-6" />
-                <span className="font-medium">הוסף ישות</span>
+                <span className="font-medium">הוסף כרטסת</span>
               </Link>
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function Dashboard() {
             <div>
               <p className="text-lg font-medium text-slate-700">המערכת ריקה</p>
               <p className="mt-2 text-slate-500">
-                התחל ביצירת ישות ראשונה בלוח הניהול כדי להגדיר שדות ורשומות.
+                התחל ביצירת כרטסת ראשונה בלוח הניהול כדי להגדיר שדות ורשומות.
               </p>
             </div>
             <Link

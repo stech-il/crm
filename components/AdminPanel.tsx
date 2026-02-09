@@ -44,7 +44,7 @@ export default function AdminPanel() {
   const [deleteConfirmField, setDeleteConfirmField] = useState<FieldDef | null>(null);
   const [deleteConfirmEntity, setDeleteConfirmEntity] = useState<Entity | null>(null);
 
-  // טופס ישות
+  // טופס כרטסת
   const [entityForm, setEntityForm] = useState({ name: "", slug: "", icon: "Layers" });
   const [entitySubmitting, setEntitySubmitting] = useState(false);
   const [entityError, setEntityError] = useState("");
@@ -221,7 +221,7 @@ export default function AdminPanel() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        if (!res.ok) throw new Error("שגיאה ביצירת ישות");
+        if (!res.ok) throw new Error("שגיאה ביצירת כרטסת");
       }
       closeEntityModal();
       fetchEntities();
@@ -355,13 +355,13 @@ export default function AdminPanel() {
             className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700"
           >
             <Plus className="h-4 w-4" />
-            הוסף ישות
+            הוסף כרטסת
           </button>
         </div>
       </div>
 
       <p className="mb-6 text-slate-600">
-        הגדרת ישויות ושדות. כל שדה ניתן להגדרה דינמית – טקסט, מספר, תאריך, בחירה מרשימה ועוד.
+        הגדרת כרטסאות ושדות. כל שדה ניתן להגדרה דינמית – טקסט, מספר, תאריך, בחירה מרשימה ועוד.
       </p>
 
       {isAdmin && (
@@ -437,12 +437,12 @@ export default function AdminPanel() {
 
       {entities.length === 0 && (
         <div className="mb-6 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
-          <p className="mb-6 text-slate-600">אין עדיין ישויות. התחל ביצירת ישות ראשונה.</p>
+          <p className="mb-6 text-slate-600">אין עדיין כרטסאות. התחל ביצירת כרטסת ראשונה.</p>
           <button
             onClick={() => openEntityModal()}
             className="rounded-lg bg-primary-600 px-6 py-3 font-medium text-white shadow-sm hover:bg-primary-700"
           >
-            + הוסף ישות ראשונה
+            + הוסף כרטסת ראשונה
           </button>
         </div>
       )}
@@ -478,14 +478,14 @@ export default function AdminPanel() {
                   <button
                     onClick={() => openEntityModal(entity)}
                     className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                    title="ערוך ישות"
+                    title="ערוך כרטסת"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setDeleteConfirmEntity(entity)}
                     className="rounded-lg p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
-                    title="מחק ישות"
+                    title="מחק כרטסת"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -564,11 +564,11 @@ export default function AdminPanel() {
         ))}
       </div>
 
-      {/* מודל הוספת/עריכת ישות */}
+      {/* מודל הוספת/עריכת כרטסת */}
       <Modal
         isOpen={entityModalOpen}
         onClose={closeEntityModal}
-        title={editingEntity ? "עריכת ישות" : "הוספת ישות"}
+        title={editingEntity ? "עריכת כרטסת" : "הוספת כרטסת"}
       >
         <form onSubmit={submitEntity} className="space-y-4">
           {entityError && (
@@ -648,7 +648,7 @@ export default function AdminPanel() {
                 ? "שומר..."
                 : editingEntity
                   ? "עדכן"
-                  : "צור ישות"}
+                  : "צור כרטסת"}
             </button>
             <button
               type="button"
@@ -666,7 +666,7 @@ export default function AdminPanel() {
                 }}
                 className="rounded-lg border border-red-300 px-4 py-2.5 font-medium text-red-600 hover:bg-red-50"
               >
-                מחק ישות
+                מחק כרטסת
               </button>
             )}
           </div>
@@ -834,16 +834,16 @@ export default function AdminPanel() {
         )}
       </Modal>
 
-      {/* מודל אישור מחיקת ישות */}
+      {/* מודל אישור מחיקת כרטסת */}
       <Modal
         isOpen={!!deleteConfirmEntity}
         onClose={() => setDeleteConfirmEntity(null)}
-        title="מחיקת ישות"
+        title="מחיקת כרטסת"
       >
         {deleteConfirmEntity && (
           <div className="space-y-4">
             <p className="text-slate-600">
-              האם למחוק את הישות &quot;{deleteConfirmEntity.name}&quot;? כל השדות והרשומות יימחקו. פעולה זו לא ניתנת לביטול.
+              האם למחוק את הכרטסת &quot;{deleteConfirmEntity.name}&quot;? כל השדות והרשומות יימחקו. פעולה זו לא ניתנת לביטול.
             </p>
             <div className="flex gap-2">
               <button

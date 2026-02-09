@@ -130,7 +130,7 @@ export default function UsersAdmin() {
             href="/admin"
             className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
           >
-            ← ישויות
+            ← ניהול
           </Link>
           <button
             onClick={() => openModal()}

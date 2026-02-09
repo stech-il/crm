@@ -88,7 +88,7 @@ export default function WebhooksAdmin() {
           <div><label className="block text-sm font-medium text-slate-700 mb-1">שם</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2" /></div>
           <div><label className="block text-sm font-medium text-slate-700 mb-1">URL</label><input value={form.url} onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} placeholder="https://..." className="w-full rounded-lg border border-slate-300 px-3 py-2" /></div>
           <div><label className="block text-sm font-medium text-slate-700 mb-1">Secret (אופציונלי)</label><input type="password" value={form.secret} onChange={(e) => setForm((f) => ({ ...f, secret: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2" /></div>
-          <div><label className="block text-sm font-medium text-slate-700 mb-1">ישות (ריק = כולן)</label><input value={form.entitySlug} onChange={(e) => setForm((f) => ({ ...f, entitySlug: e.target.value }))} placeholder="leads" className="w-full rounded-lg border border-slate-300 px-3 py-2" /></div>
+          <div><label className="block text-sm font-medium text-slate-700 mb-1">כרטסת (ריק = כולן)</label><input value={form.entitySlug} onChange={(e) => setForm((f) => ({ ...f, entitySlug: e.target.value }))} placeholder="leads" className="w-full rounded-lg border border-slate-300 px-3 py-2" /></div>
           <div><label className="block text-sm font-medium text-slate-700 mb-2">אירועים</label>
             <div className="flex flex-wrap gap-2">{EVENTS.map((ev) => (
               <label key={ev} className="flex items-center gap-2">

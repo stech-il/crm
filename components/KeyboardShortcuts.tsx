@@ -7,7 +7,7 @@ import { Keyboard } from "lucide-react";
 const SHORTCUTS = [
   { keys: "G ‏→‏ D", desc: "לוח בקרה" },
   { keys: "G ‏→‏ A", desc: "ניהול" },
-  { keys: "G ‏→‏ N", desc: "חדש (בישות נוכחית)" },
+  { keys: "G ‏→‏ N", desc: "חדש (בכרטסת נוכחית)" },
   { keys: "/", desc: "מקד חיפוש" },
   { keys: "?", desc: "הצג קיצורי מקלדת" },
 ];
