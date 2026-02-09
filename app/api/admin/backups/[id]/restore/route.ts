@@ -83,12 +83,18 @@ export async function POST(
         recordIdMap[r.id] = created.id;
       }
 
-      const tasks = (data.tasks || []) as { recordId: string; title: string; done: boolean; order: number }[];
+      const tasks = (data.tasks || []) as { recordId: string; title: string; done: boolean; order: number; dueDate?: string | Date | null }[];
       for (const t of tasks) {
         const newRecordId = recordIdMap[t.recordId];
         if (!newRecordId) continue;
         await tx.recordTask.create({
-          data: { recordId: newRecordId, title: t.title, done: t.done ?? false, order: t.order ?? 0 },
+          data: {
+            recordId: newRecordId,
+            title: t.title,
+            done: t.done ?? false,
+            order: t.order ?? 0,
+            dueDate: t.dueDate ? new Date(t.dueDate) : null,
+          },
         });
       }
 

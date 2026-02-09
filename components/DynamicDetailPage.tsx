@@ -8,7 +8,7 @@ import { usePolling } from "../lib/usePolling";
 
 type FieldDef = { id: string; name: string; label: string; type: string; showInCard?: boolean };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
-type Task = { id: string; title: string; done: boolean; order: number };
+type Task = { id: string; title: string; done: boolean; order: number; dueDate?: string | null };
 type CallLog = { id: string; phoneNumber: string; direction: string; duration?: number; notes?: string; createdAt: string; createdBy?: { name: string } };
 type ActivityItem = { id: string; type: string; content: string | null; createdAt: string; createdBy?: { name: string } | null };
 type Note = { id: string; content: string; createdAt: string; createdBy?: { name: string } | null };
@@ -43,8 +43,10 @@ export default function DynamicDetailPage({
   const [entity, setEntity] = useState<Entity | null>(null);
   const [record, setRecord] = useState<DynamicRecordData | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
+  const [editingTaskDueDate, setEditingTaskDueDate] = useState("");
   const [newCallPhone, setNewCallPhone] = useState("");
   const [newCallNotes, setNewCallNotes] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
@@ -75,9 +77,10 @@ export default function DynamicDetailPage({
     await fetch(`/api/dynamic/${entitySlug}/${recordId}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTaskTitle.trim() }),
+      body: JSON.stringify({ title: newTaskTitle.trim(), dueDate: newTaskDueDate || null }),
     });
     setNewTaskTitle("");
+    setNewTaskDueDate("");
     fetchData();
   };
 
@@ -99,6 +102,7 @@ export default function DynamicDetailPage({
   const startEditTask = (task: Task) => {
     setEditingTaskId(task.id);
     setEditingTaskTitle(task.title);
+    setEditingTaskDueDate(task.dueDate ? task.dueDate.slice(0, 10) : "");
   };
 
   const saveEditTask = async () => {
@@ -106,17 +110,21 @@ export default function DynamicDetailPage({
     await fetch(`/api/dynamic/${entitySlug}/${recordId}/tasks/${editingTaskId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: editingTaskTitle.trim() }),
+      body: JSON.stringify({ title: editingTaskTitle.trim(), dueDate: editingTaskDueDate || null }),
     });
     setEditingTaskId(null);
     setEditingTaskTitle("");
+    setEditingTaskDueDate("");
     fetchData();
   };
 
   const cancelEditTask = () => {
     setEditingTaskId(null);
     setEditingTaskTitle("");
+    setEditingTaskDueDate("");
   };
+
+  const isOverdue = (d: string | null | undefined) => d && !new Date(d).toDateString().startsWith("1970") && new Date(d) < new Date();
 
   const addCall = async () => {
     if (!newCallPhone.trim()) return;
@@ -236,14 +244,21 @@ export default function DynamicDetailPage({
       {/* משימות */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm mb-6">
         <h2 className="mb-4 text-lg font-semibold text-slate-800">משימות</h2>
-        <div className="mb-4 flex gap-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           <input
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addTask()}
             placeholder="הוסף משימה..."
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="flex-1 min-w-[180px] rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <input
+            type="date"
+            value={newTaskDueDate}
+            onChange={(e) => setNewTaskDueDate(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            title="תאריך יעד"
           />
           <button
             onClick={addTask}
@@ -255,7 +270,7 @@ export default function DynamicDetailPage({
         </div>
         <ul className="space-y-2">
           {tasks.map((t) => (
-            <li key={t.id} className="flex items-center gap-2 rounded-lg bg-slate-50 p-2">
+            <li key={t.id} className={`flex items-center gap-2 rounded-lg p-2 ${t.done ? "bg-slate-50" : isOverdue(t.dueDate) ? "bg-red-50" : "bg-slate-50"}`}>
               <button
                 onClick={() => toggleTask(t.id, !t.done)}
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded border ${t.done ? "bg-primary-500 border-primary-500 text-white" : "border-slate-300"}`}
@@ -275,6 +290,12 @@ export default function DynamicDetailPage({
                     className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
                     autoFocus
                   />
+                  <input
+                    type="date"
+                    value={editingTaskDueDate}
+                    onChange={(e) => setEditingTaskDueDate(e.target.value)}
+                    className="rounded border border-slate-300 px-2 py-1 text-sm w-36"
+                  />
                   <button onClick={saveEditTask} className="rounded bg-primary-600 px-2 py-1 text-xs text-white hover:bg-primary-700">
                     שמור
                   </button>
@@ -285,6 +306,11 @@ export default function DynamicDetailPage({
               ) : (
                 <>
                   <span className={`flex-1 ${t.done ? "text-slate-500 line-through" : ""}`}>{t.title}</span>
+                  {t.dueDate && (
+                    <span className={`text-xs shrink-0 ${t.done ? "text-slate-400" : isOverdue(t.dueDate) ? "text-red-600 font-medium" : "text-slate-500"}`} title="תאריך יעד">
+                      {new Date(t.dueDate).toLocaleDateString("he-IL")}
+                    </span>
+                  )}
                   <button onClick={() => startEditTask(t)} className="p-1 text-slate-400 hover:text-primary-600" title="עריכה">
                     <Pencil className="h-4 w-4" />
                   </button>

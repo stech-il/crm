@@ -92,6 +92,7 @@ model RecordTask {
   record      DynamicRecord  @relation(fields: [recordId], references: [id], onDelete: Cascade)
   title       String
   done        Boolean        @default(false)
+  dueDate     DateTime?      // תאריך יעד להתראה
   order       Int            @default(0)
   createdById String?
   createdBy   User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)

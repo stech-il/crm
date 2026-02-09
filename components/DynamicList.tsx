@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Download, Filter, ChevronDown, ChevronUp, Bookmark } from "lucide-react";
+import { Plus, Search, Download, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List } from "lucide-react";
 import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
 
-type FieldDef = { id: string; name: string; label: string; type: string; showInList?: boolean };
+type FieldDef = { id: string; name: string; label: string; type: string; showInList?: boolean; options?: string | null };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
 type DynamicRecordItem = { id: string; data: Record<string, unknown>; updatedAt: string };
 type SavedView = { id: string; name: string; filter: string | null; sort: string | null; module: string };
@@ -27,6 +27,8 @@ export default function DynamicList({ entitySlug }: Props) {
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const [saveViewName, setSaveViewName] = useState("");
+  const [viewMode, setViewMode] = useState<"table" | "pipeline">("table");
+  const [pipelineField, setPipelineField] = useState("");
 
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
@@ -141,6 +143,37 @@ export default function DynamicList({ entitySlug }: Props) {
   }
 
   const displayFields = (entity.fields || []).filter((f) => f.showInList !== false);
+  const pipelineFields = (entity.fields || []).filter((f) => f.type === "select" || f.type === "multiselect");
+
+  const getPipelineColumns = () => {
+    if (!pipelineField) return [""];
+    const field = entity.fields.find((f) => f.name === pipelineField);
+    const optionValues: string[] = [];
+    if (field?.options) {
+      try {
+        const opts = JSON.parse(field.options) as { value?: string; label?: string }[];
+        optionValues.push(...(opts?.map((o) => o?.value ?? o?.label ?? "")).filter(Boolean) ?? []);
+      } catch {}
+    }
+    const fromRecords = new Set<string>();
+    records.forEach((r) => {
+      const v = (r.data as Record<string, unknown>)[pipelineField];
+      if (v != null && v !== "") fromRecords.add(String(v));
+    });
+    optionValues.forEach((v) => fromRecords.add(v));
+    return ["", ...Array.from(fromRecords).sort()];
+  };
+
+  const pipelineColumns = viewMode === "pipeline" ? getPipelineColumns() : [];
+  const recordsByColumn = viewMode === "pipeline" && pipelineField
+    ? pipelineColumns.reduce((acc, col) => {
+        acc[col] = records.filter((r) => {
+          const v = (r.data as Record<string, unknown>)[pipelineField];
+          return String(v ?? "") === col;
+        });
+        return acc;
+      }, {} as Record<string, DynamicRecordItem[]>)
+    : {};
 
   return (
     <div className="p-8">
@@ -206,6 +239,41 @@ export default function DynamicList({ entitySlug }: Props) {
           <Download className="h-4 w-4" />
           ייצוא CSV
         </button>
+        {pipelineFields.length > 0 && (
+          <>
+            <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`px-3 py-2 text-sm ${viewMode === "table" ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600"}`}
+                title="טבלה"
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode("pipeline");
+                  if (!pipelineField && pipelineFields[0]) setPipelineField(pipelineFields[0].name);
+                }}
+                className={`px-3 py-2 text-sm ${viewMode === "pipeline" ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600"}`}
+                title="פאנלים"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+            </div>
+            {viewMode === "pipeline" && (
+              <select
+                value={pipelineField}
+                onChange={(e) => setPipelineField(e.target.value)}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              >
+                <option value="">בחר שדה למיון...</option>
+                {pipelineFields.map((f) => (
+                  <option key={f.id} value={f.name}>{f.label}</option>
+                ))}
+              </select>
+            )}
+          </>
+        )}
       </div>
       {showFilter && (
         <div className="mb-4 flex gap-2 items-center rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -229,6 +297,35 @@ export default function DynamicList({ entitySlug }: Props) {
         </div>
       )}
 
+      {viewMode === "pipeline" && pipelineField ? (
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {pipelineColumns.map((col) => (
+            <div key={col || "_empty"} className="flex-shrink-0 w-72 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
+              <div className="px-4 py-3 bg-slate-200 font-semibold text-slate-700">
+                {col || "(ללא ערך)"}
+              </div>
+              <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto">
+                {recordsByColumn[col]?.map((r) => (
+                  <Link
+                    key={r.id}
+                    href={`/dynamic/${entitySlug}/${r.id}`}
+                    className="block rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:border-primary-300 hover:shadow"
+                  >
+                    <p className="font-medium text-primary-600 truncate">
+                      {displayFields[0]
+                        ? (formatFieldValue((r.data as Record<string, unknown>)[displayFields[0].name], displayFields[0].type) || r.id.slice(0, 8))
+                        : r.id.slice(0, 8)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {new Date(r.updatedAt).toLocaleDateString("he-IL")}
+                    </p>
+                  </Link>
+                )) ?? []}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <table className="w-full">
           <thead className="bg-slate-50">
@@ -283,6 +380,7 @@ export default function DynamicList({ entitySlug }: Props) {
           <div className="py-16 text-center text-slate-500">אין רשומות</div>
         )}
       </div>
+      )}
     </div>
   );
 }

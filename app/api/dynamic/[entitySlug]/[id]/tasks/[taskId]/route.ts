@@ -20,9 +20,10 @@ export async function PATCH(
     const session = await getSession();
     const createdById = (session?.user as { id?: string })?.id || null;
     const body = await req.json();
-    const data: { done?: boolean; title?: string } = {};
+    const data: { done?: boolean; title?: string; dueDate?: Date | null } = {};
     if (typeof body.done === "boolean") data.done = body.done;
     if (typeof body.title === "string" && body.title.trim()) data.title = body.title.trim();
+    if (body.dueDate !== undefined) data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     const task = await prisma.recordTask.update({
       where: { id: taskId },
       data,

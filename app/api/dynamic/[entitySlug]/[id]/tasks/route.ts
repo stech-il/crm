@@ -34,7 +34,7 @@ export async function POST(
       where: { id, entityId: entity.id },
     });
     if (!record) return NextResponse.json({ error: "Record not found" }, { status: 404 });
-    const { title } = await req.json();
+    const { title, dueDate } = await req.json();
     if (!title || typeof title !== "string") {
       return NextResponse.json({ error: "נא להזין כותרת" }, { status: 400 });
     }
@@ -48,6 +48,7 @@ export async function POST(
         title: title.trim(),
         order: maxOrder + 1,
         createdById,
+        dueDate: dueDate ? new Date(dueDate) : null,
       },
     });
     await createActivity(id, "task_added", task.title, createdById);
