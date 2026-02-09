@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import DynamicForm from "./DynamicForm";
 import { normalizeEntity, type DynamicEntity } from "../lib/dynamicTypes";
 
@@ -14,9 +15,12 @@ export default function DynamicFormPage({
   recordId?: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const templateIdFromUrl = searchParams.get("template");
   const [entity, setEntity] = useState<DynamicEntity | null>(null);
   const [initialData, setInitialData] = useState<Record<string, unknown>>({});
   const [templates, setTemplates] = useState<{ id: string; name: string; data: object }[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
   useEffect(() => {
     if (recordId) {
@@ -34,10 +38,30 @@ export default function DynamicFormPage({
         });
       fetch(`/api/dynamic/${entitySlug}/templates`)
         .then((r) => r.json())
-        .then((t) => setTemplates(Array.isArray(t) ? t : []))
+        .then((t) => {
+          const arr = Array.isArray(t) ? t : [];
+          setTemplates(arr);
+          if (templateIdFromUrl && arr.some((x: { id: string }) => x.id === templateIdFromUrl)) {
+            const tmpl = arr.find((x: { id: string; data: object }) => x.id === templateIdFromUrl);
+            if (tmpl) {
+              setSelectedTemplateId(templateIdFromUrl);
+              setInitialData((tmpl.data as Record<string, unknown>) || {});
+            }
+          }
+        })
         .catch(() => setTemplates([]));
     }
-  }, [entitySlug, recordId]);
+  }, [entitySlug, recordId, templateIdFromUrl]);
+
+  const deleteTemplate = async (templateId: string) => {
+    if (!confirm("למחוק תבנית זו?")) return;
+    await fetch(`/api/dynamic/${entitySlug}/templates/${templateId}`, { method: "DELETE" });
+    setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+    if (selectedTemplateId === templateId) {
+      setSelectedTemplateId("");
+      setInitialData({});
+    }
+  };
 
   const handleSubmit = async (data: Record<string, unknown>) => {
     if (recordId) {
@@ -96,8 +120,11 @@ export default function DynamicFormPage({
         <div className="mb-6 flex items-center gap-2">
           <span className="text-sm text-slate-600">תבנית:</span>
           <select
+            value={selectedTemplateId}
             onChange={(e) => {
-              const t = templates.find((x) => x.id === e.target.value);
+              const id = e.target.value;
+              setSelectedTemplateId(id);
+              const t = templates.find((x) => x.id === id);
               if (t) setInitialData((t.data as Record<string, unknown>) || {});
               else setInitialData({});
             }}
@@ -108,6 +135,17 @@ export default function DynamicFormPage({
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </select>
+          {selectedTemplateId && (
+            <button
+              type="button"
+              onClick={() => deleteTemplate(selectedTemplateId)}
+              className="flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1.5 text-sm text-red-600 hover:bg-red-50"
+              title="מחק תבנית"
+            >
+              <Trash2 className="h-4 w-4" />
+              מחק תבנית
+            </button>
+          )}
         </div>
       )}
       <DynamicForm

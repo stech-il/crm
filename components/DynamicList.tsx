@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Download, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List, Archive } from "lucide-react";
+import { Plus, Search, Download, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List, Archive, FileText, Trash2 } from "lucide-react";
 import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
 
 type FieldDef = { id: string; name: string; label: string; type: string; showInList?: boolean; options?: string | null };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
-type DynamicRecordItem = { id: string; data: Record<string, unknown>; updatedAt: string };
+type DynamicRecordItem = { id: string; data: Record<string, unknown>; updatedAt: string; createdAt?: string };
 type SavedView = { id: string; name: string; filter: string | null; sort: string | null; module: string };
 
 type Props = {
@@ -37,6 +37,8 @@ export default function DynamicList({ entitySlug }: Props) {
 
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
@@ -80,6 +82,20 @@ export default function DynamicList({ entitySlug }: Props) {
   useEffect(() => {
     fetch("/api/tags").then((r) => r.json()).then((t) => setAllTags(Array.isArray(t) ? t : [])).catch(() => setAllTags([]));
   }, []);
+
+  const fetchTemplates = useCallback(() => {
+    fetch(`/api/dynamic/${entitySlug}/templates`)
+      .then((r) => r.json())
+      .then((t) => setTemplates(Array.isArray(t) ? t.map((x: { id: string; name: string }) => ({ id: x.id, name: x.name })) : []))
+      .catch(() => setTemplates([]));
+  }, [entitySlug]);
+  useEffect(() => fetchTemplates(), [fetchTemplates]);
+
+  const deleteTemplate = async (templateId: string) => {
+    if (!confirm("למחוק תבנית זו?")) return;
+    await fetch(`/api/dynamic/${entitySlug}/templates/${templateId}`, { method: "DELETE" });
+    setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+  };
 
   const applyView = (v: SavedView) => {
     if (v.filter) {
@@ -156,6 +172,28 @@ export default function DynamicList({ entitySlug }: Props) {
   const toggleSelectAll = () => {
     if (selectedIds.size === records.length) setSelectedIds(new Set());
     else setSelectedIds(new Set(records.map((r) => r.id)));
+  };
+
+  const quickStatusChange = async (recordId: string, fieldName: string, newValue: string) => {
+    const rec = records.find((r) => r.id === recordId);
+    if (!rec) return;
+    const nextData = { ...(rec.data as Record<string, unknown>), [fieldName]: newValue };
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: nextData }),
+    });
+    fetchData();
+  };
+
+  const getSelectOptions = (field: FieldDef): { value: string; label: string }[] => {
+    if (!field.options) return [];
+    try {
+      const opts = JSON.parse(field.options) as { value?: string; label?: string }[];
+      return (opts ?? []).map((o) => ({ value: String(o?.value ?? o?.label ?? ""), label: String(o?.label ?? o?.value ?? "") })).filter((o) => o.value !== "");
+    } catch {
+      return [];
+    }
   };
 
   const bulkArchive = async () => {
@@ -239,14 +277,46 @@ export default function DynamicList({ entitySlug }: Props) {
         <h1 className="text-2xl font-bold text-slate-800">
           {entity.name} ({totalCount})
         </h1>
-        <Link
-          href={`/dynamic/${entitySlug}/new`}
-          className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-        >
-          <Plus className="h-4 w-4" />
-          חדש
-        </Link>
+        <div className="flex items-center gap-2">
+          {templates.length > 0 && (
+            <button
+              onClick={() => setShowTemplates(!showTemplates)}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${showTemplates ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+            >
+              <FileText className="h-4 w-4" />
+              תבניות ({templates.length})
+            </button>
+          )}
+          <Link
+            href={`/dynamic/${entitySlug}/new`}
+            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            <Plus className="h-4 w-4" />
+            חדש
+          </Link>
+        </div>
       </div>
+
+      {showTemplates && templates.length > 0 && (
+        <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-3 text-sm font-semibold text-slate-700">ניהול תבניות</h3>
+          <div className="flex flex-wrap gap-2">
+            {templates.map((t) => (
+              <div key={t.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <span className="text-sm text-slate-700">{t.name}</span>
+                <Link href={`/dynamic/${entitySlug}/new?template=${t.id}`} className="text-xs text-primary-600 hover:underline">השתמש</Link>
+                <button
+                  onClick={() => deleteTemplate(t.id)}
+                  className="text-red-500 hover:text-red-700"
+                  title="מחק תבנית"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap gap-2 items-center">
         <div className="relative flex-1 min-w-[200px] max-w-xs">
@@ -467,6 +537,15 @@ export default function DynamicList({ entitySlug }: Props) {
               ))}
               <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600">
                 <button
+                  onClick={() => toggleSort("createdAt")}
+                  className="flex items-center gap-1 w-full justify-end hover:text-primary-600"
+                >
+                  נוצר
+                  {sortField === "createdAt" && (sortDir === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                </button>
+              </th>
+              <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600">
+                <button
                   onClick={() => toggleSort("updatedAt")}
                   className="flex items-center gap-1 w-full justify-end hover:text-primary-600"
                 >
@@ -491,18 +570,35 @@ export default function DynamicList({ entitySlug }: Props) {
                 )}
                 {displayFields.map((f) => (
                   <td key={f.id} className="px-6 py-4">
-                    <Link
-                      href={`/dynamic/${entitySlug}/${r.id}`}
-                      className="font-medium text-primary-600 hover:underline"
-                    >
-                      {(() => {
-                        const val = (r.data as Record<string, unknown>)[f.name];
-                        if (isFileValue(val)) return val.filename || "קובץ";
-                        return formatFieldValue(val, f.type);
-                      })()}
-                    </Link>
+                    {f.type === "select" && getSelectOptions(f).length > 0 ? (
+                      <select
+                        value={String((r.data as Record<string, unknown>)[f.name] ?? "")}
+                        onChange={(e) => quickStatusChange(r.id, f.name, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded border border-slate-300 px-2 py-1 text-sm w-full max-w-[200px] hover:border-primary-400"
+                      >
+                        <option value="">—</option>
+                        {getSelectOptions(f).map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Link
+                        href={`/dynamic/${entitySlug}/${r.id}`}
+                        className="font-medium text-primary-600 hover:underline block"
+                      >
+                        {(() => {
+                          const val = (r.data as Record<string, unknown>)[f.name];
+                          if (isFileValue(val)) return val.filename || "קובץ";
+                          return formatFieldValue(val, f.type);
+                        })()}
+                      </Link>
+                    )}
                   </td>
                 ))}
+                <td className="px-6 py-4 text-sm text-slate-600">
+                  {r.createdAt ? new Date(r.createdAt).toLocaleString("he-IL") : "—"}
+                </td>
                 <td className="px-6 py-4 text-sm text-slate-600">
                   {new Date(r.updatedAt).toLocaleString("he-IL")}
                 </td>

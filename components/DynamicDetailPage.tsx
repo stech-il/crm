@@ -19,6 +19,7 @@ type RecordTag = { id: string; tag: { id: string; name: string; color: string } 
 type DynamicRecordData = {
   id: string;
   data: Record<string, unknown>;
+  createdAt?: string;
   updatedAt: string;
   isArchived?: boolean;
   createdBy?: { id: string; name: string } | null;
@@ -276,6 +277,9 @@ export default function DynamicDetailPage({
             {formatFieldValueForTitle(data[entity.fields[0]?.name]) || record.id.slice(0, 8) || "רשומה"}
           </h1>
           <div className="mt-1 flex flex-wrap gap-2 items-center">
+            {record.createdAt && (
+              <span className="text-sm text-slate-500">נוצר ב־{new Date(record.createdAt).toLocaleString("he-IL")}</span>
+            )}
             {record.createdBy && (
               <span className="text-sm text-slate-500">נוצר ע״י {record.createdBy.name}</span>
             )}

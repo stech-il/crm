@@ -89,7 +89,7 @@ export async function GET(
 
     if (format === "csv") {
       const fields = entity.fields.filter((f) => f.showInList !== false);
-      const headers = ["id", ...fields.map((f) => f.label), "updatedAt"];
+      const headers = ["id", ...fields.map((f) => f.label), "createdAt", "updatedAt"];
       const rows = records.map((r) => {
         const d = r.data as Record<string, unknown>;
         const cells = [
@@ -100,6 +100,7 @@ export async function GET(
             if (typeof v === "object" && v !== null && "url" in v) return (v as { url?: string }).url || "";
             return String(v).replace(/"/g, '""');
           }),
+          new Date(r.createdAt).toLocaleString("he-IL"),
           new Date(r.updatedAt).toLocaleString("he-IL"),
         ];
         return cells.map((c) => `"${c}"`).join(",");
