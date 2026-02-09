@@ -16,8 +16,7 @@ services:
     name: crm-cloud
     runtime: node
     buildCommand: npm install && npx prisma generate && npx prisma db push --accept-data-loss && npm run build && (cp -r public .next/standalone/ 2>/dev/null || true) && (cp -r .next/static .next/standalone/.next/static) && npm run db:seed
-    # NEXTAUTH_URL מוגדר אוטומטית מ-RENDER_EXTERNAL_URL (כתובת השרת האמיתית)
-    startCommand: sh -c 'export NEXTAUTH_URL="${NEXTAUTH_URL:-$RENDER_EXTERNAL_URL}" && cd .next/standalone && node server.js'
+    startCommand: cd .next/standalone && node server.js
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -27,7 +26,8 @@ services:
         value: production
       - key: NEXTAUTH_SECRET
         generateValue: true
-      # NEXTAUTH_URL - לא נדרש. ה-startCommand משתמש ב-RENDER_EXTERNAL_URL (הכתובת האוטומטית של Render)
+      - key: NEXTAUTH_URL
+        value: https://crm.landing-p.co.il
     healthCheckPath: /api/health
 
 databases:

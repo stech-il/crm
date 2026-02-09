@@ -46,7 +46,7 @@ npm run dev
 חשוב: עם `output: 'standalone'` חייבים להריץ את `server.js` מתוך תיקיית standalone, לא `next start`.
 - **Environment:** `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CLOUDINARY_*`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (לשכחתי סיסמה)
 
-**ב-Render:** `NEXTAUTH_URL` מוגדר אוטומטית מ-`RENDER_EXTERNAL_URL` (כתובת השרת האמיתית). אין צורך להגדיר ידנית.
+**חשוב:** `NEXTAUTH_URL` מוגדר כ-`https://crm.landing-p.co.il`. אם הכתובת משתנה – עדכן ב-Render Dashboard.
 
 **שגיאת "Cannot GET /login":** אם אתה מקבל שגיאה זו, נסה: (1) `npm run build` – וודא שהבנייה מצליחה; (2) וודא שאתה ניגש לכתובת הנכונה (למשל `https://yoursite.com/login` ולא רק `/login` בלי הדומיין).
 
