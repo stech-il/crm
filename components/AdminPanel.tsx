@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Plus, Settings, ChevronDown, Pencil, Trash2, Database, RotateCcw, Tag, Zap, Webhook, FileText, Key, Book } from "lucide-react";
+import { Plus, Settings, ChevronDown, Pencil, Trash2, Database, RotateCcw, Tag, Zap, Webhook, FileText, Key, Book, Users } from "lucide-react";
 import { FIELD_TYPES } from "../lib/fieldTypes";
 import { ENTITY_ICONS } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
@@ -336,6 +336,7 @@ export default function AdminPanel() {
         <div className="flex gap-2">
           {isAdmin && (
             <>
+              <Link href="/admin/users" className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"><Users className="h-4 w-4" /> משתמשים</Link>
               <Link href="/admin/backups" className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"><Database className="h-4 w-4" /> גיבויים</Link>
               <Link href="/admin/integrations" className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"><Zap className="h-4 w-4" /> אינטגרציות</Link>
               <Link href="/admin/webhooks" className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"><Webhook className="h-4 w-4" /> Webhooks</Link>
@@ -344,12 +345,6 @@ export default function AdminPanel() {
               <Link href="/api-docs" className="flex items-center gap-2 rounded-lg border border-primary-200 px-4 py-2.5 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100"><Book className="h-4 w-4" /> תיעוד API</Link>
             </>
           )}
-          <Link
-            href="/admin/users"
-            className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-          >
-            משתמשים
-          </Link>
           <button
             onClick={() => openEntityModal()}
             className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700"

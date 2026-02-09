@@ -20,7 +20,7 @@ export default function UsersAdmin() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<UserItem | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "user" });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -38,10 +38,10 @@ export default function UsersAdmin() {
   const openModal = (user?: UserItem) => {
     if (user) {
       setEditingUser(user);
-      setForm({ name: user.name, email: user.email || "", password: "", role: user.role });
+      setForm({ name: user.name, email: user.email || "", password: "" });
     } else {
       setEditingUser(null);
-      setForm({ name: "", email: "", password: "", role: "user" });
+      setForm({ name: "", email: "", password: "" });
     }
     setError("");
     setModalOpen(true);
@@ -70,7 +70,6 @@ export default function UsersAdmin() {
         const body: Record<string, unknown> = {
           name: form.name.trim(),
           email: form.email.trim(),
-          role: form.role,
         };
         if (form.password) body.password = form.password;
         const res = await fetch(`/api/users/${editingUser.id}`, {
@@ -88,7 +87,6 @@ export default function UsersAdmin() {
             name: form.name.trim(),
             email: form.email.trim(),
             password: form.password,
-            role: form.role,
           }),
         });
         const data = await res.json();
@@ -183,13 +181,15 @@ export default function UsersAdmin() {
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <button
-                      onClick={() => setDeleteConfirm(user)}
-                      className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
-                      title="מחק"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {user.email !== "admin@crm.com" && (
+                      <button
+                        onClick={() => setDeleteConfirm(user)}
+                        className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                        title="מחק"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -249,17 +249,14 @@ export default function UsersAdmin() {
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             />
           </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">תפקיד</label>
-            <select
-              value={form.role}
-              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            >
-              <option value="user">משתמש</option>
-              <option value="admin">אדמין</option>
-            </select>
-          </div>
+          {editingUser && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">תפקיד</label>
+              <p className="text-sm text-slate-600">
+                {editingUser.email === "admin@crm.com" ? "אדמין" : "משתמש"} (רק admin@crm.com הוא אדמין)
+              </p>
+            </div>
+          )}
           <div className="flex gap-2 pt-2">
             <button
               type="submit"

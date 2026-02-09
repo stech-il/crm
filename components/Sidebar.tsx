@@ -49,7 +49,7 @@ export default function Sidebar() {
         };
       }),
     { href: "/admin", label: "ניהול", icon: Settings },
-    { href: "/admin/users", label: "משתמשים", icon: Users },
+    ...(isAdmin ? [{ href: "/admin/users", label: "משתמשים", icon: Users }] : []),
     ...(isAdmin ? [{ href: "/admin/backups", label: "גיבויים", icon: Database }] : []),
     { href: "/api-docs", label: "תיעוד API", icon: Book },
   ];
