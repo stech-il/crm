@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Settings, Search } from "lucide-react";
+import { User, Settings, Search, Keyboard } from "lucide-react";
 
 type SearchResult = { id: string; entitySlug: string; entityName: string; title: string; updatedAt: string };
 
@@ -81,6 +81,13 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2">
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("showKeyboardShortcuts"))}
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          title="קיצורי מקלדת (?)"
+        >
+          <Keyboard className="h-5 w-5" />
+        </button>
         <Link
           href="/admin"
           className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"

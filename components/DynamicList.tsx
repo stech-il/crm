@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Download, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List, Archive, FileText, Trash2 } from "lucide-react";
+import { Plus, Search, Download, Upload, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List, Archive, FileText, Trash2 } from "lucide-react";
 import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
 
@@ -39,6 +39,9 @@ export default function DynamicList({ entitySlug }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; total: number; errors: number } | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
@@ -135,6 +138,28 @@ export default function DynamicList({ entitySlug }: Props) {
   const exportCsv = () => {
     const qs = buildParams();
     window.open(`/api/dynamic/${entitySlug}?${qs}&format=csv`, "_blank");
+  };
+
+  const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch(`/api/dynamic/${entitySlug}/import`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok) {
+        setImportResult(data);
+        fetchData();
+      } else alert(data.error || "שגיאה בייבוא");
+    } catch {
+      alert("שגיאה בייבוא");
+    } finally {
+      setImporting(false);
+      e.target.value = "";
+    }
   };
 
   const toggleSort = (field: string) => {
@@ -297,6 +322,14 @@ export default function DynamicList({ entitySlug }: Props) {
         </div>
       </div>
 
+      {importResult && (
+        <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-800 text-sm">
+          ייבוא הושלם: {importResult.imported} מתוך {importResult.total} רשומות
+          {importResult.errors > 0 && ` (${importResult.errors} שגיאות)`}
+          <button onClick={() => setImportResult(null)} className="mr-2 text-emerald-600 hover:underline">סגור</button>
+        </div>
+      )}
+
       {showTemplates && templates.length > 0 && (
         <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <h3 className="mb-3 text-sm font-semibold text-slate-700">ניהול תבניות</h3>
@@ -377,6 +410,21 @@ export default function DynamicList({ entitySlug }: Props) {
             ארכב ({selectedIds.size})
           </button>
         )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,.txt"
+          onChange={handleImportCsv}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importing}
+          className="flex items-center gap-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        >
+          <Upload className="h-4 w-4" />
+          {importing ? "מייבא..." : "ייבוא CSV"}
+        </button>
         <button onClick={exportCsv} className="flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
           <Download className="h-4 w-4" />
           ייצוא CSV
@@ -522,6 +570,7 @@ export default function DynamicList({ entitySlug }: Props) {
         </div>
       ) : (
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        {records.length > 0 ? (
         <table className="w-full">
           <thead className="bg-slate-50">
             <tr>
@@ -617,8 +666,38 @@ export default function DynamicList({ entitySlug }: Props) {
             ))}
           </tbody>
         </table>
-        {records.length === 0 && (
-          <div className="py-16 text-center text-slate-500">אין רשומות</div>
+        ) : (
+          <div className="py-16 px-8 text-center">
+            <div className="max-w-sm mx-auto">
+              <p className="text-slate-600 font-medium mb-2">אין רשומות</p>
+              <p className="text-sm text-slate-500 mb-6">צור רשומה ראשונה, ייבא מקובץ CSV או השתמש בתבנית</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link
+                  href={`/dynamic/${entitySlug}/new`}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  רשומה חדשה
+                </Link>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  <Upload className="h-4 w-4" />
+                  ייבוא CSV
+                </button>
+                {templates.length > 0 && (
+                  <Link
+                    href={`/dynamic/${entitySlug}/new?template=${templates[0].id}`}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    <FileText className="h-4 w-4" />
+                    מתבנית
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
       )}

@@ -23,6 +23,7 @@ export default function ApiDocsPage() {
         <a href="#entities" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">ישויות</a>
         <a href="#records" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">רשומות</a>
         <a href="#webhooks" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">Webhooks</a>
+        <a href="#import" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">ייבוא CSV</a>
         <a href="#errors" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">שגיאות</a>
       </nav>
 
@@ -190,6 +191,16 @@ const signature = crypto
   .digest('hex');
 const expected = 'sha256=' + signature;
 // Compare with X-Webhook-Signature header`}</pre>
+        </div>
+      </section>
+
+      <section id="import" className="mb-12">
+        <h2 className="text-xl font-bold text-slate-800 mb-4">ייבוא CSV</h2>
+        <p className="text-slate-600 mb-4">מדף רשימת ישות, לחץ על "ייבוא CSV" ובחר קובץ. שורת הכותרות צריכה להתאים לשמות השדות או לתוויות (למשל: name, email, סטטוס).</p>
+        <div className="rounded-xl border border-slate-200 p-4 bg-white">
+          <pre className="text-sm text-slate-700 overflow-x-auto">{`name,email,status,phone
+יוחנן,john@example.com,new,050-1234567
+מריה,maria@example.com,contacted,052-9876543`}</pre>
         </div>
       </section>
 

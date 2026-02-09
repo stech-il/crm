@@ -1,6 +1,7 @@
 import AuthGuard from "../../components/AuthGuard";
 import Header from "../../components/Header";
 import Sidebar from "../../components/Sidebar";
+import KeyboardShortcuts from "../../components/KeyboardShortcuts";
 
 export default function AppLayout({
   children,
@@ -9,6 +10,7 @@ export default function AppLayout({
 }) {
   return (
     <AuthGuard>
+      <KeyboardShortcuts />
       <div className="flex min-h-screen flex-col">
         <Header />
         <div className="flex flex-1">

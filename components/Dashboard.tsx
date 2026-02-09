@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Settings, Plus, ArrowLeft, Users, FileText, AlertCircle } from "lucide-react";
+import { LayoutDashboard, Settings, Plus, ArrowLeft, Users, FileText, AlertCircle, Activity } from "lucide-react";
 import { getEntityIcon } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
 
@@ -16,11 +16,14 @@ type EntitySummary = {
 
 type OverdueTask = { id: string; title: string; dueDate: string | null; recordId: string; entitySlug?: string; entityName?: string };
 
+type ActivityItem = { id: string; type: string; label: string; content: string | null; createdAt: string; recordId: string; entitySlug?: string; entityName?: string; createdBy?: string };
+
 type DashboardData = {
   entitiesCount: number;
   recordsCount: number;
   overdueTasksCount?: number;
   overdueTasks?: OverdueTask[];
+  recentActivity?: ActivityItem[];
   entities: EntitySummary[];
 };
 
@@ -123,6 +126,29 @@ export default function Dashboard() {
               </div>
             </Link>
           </div>
+
+          {/* פעילות אחרונה */}
+          {(data.recentActivity?.length ?? 0) > 0 && (
+            <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                פעילות אחרונה
+              </h2>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {data.recentActivity?.slice(0, 10).map((a) => (
+                  <Link
+                    key={a.id}
+                    href={a.entitySlug ? `/dynamic/${a.entitySlug}/${a.recordId}` : "#"}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-50"
+                  >
+                    <span className="text-slate-500 shrink-0">{a.label}</span>
+                    <span className="text-slate-700 truncate flex-1">{a.content || a.entityName || a.recordId?.slice(0, 8)}</span>
+                    <span className="text-xs text-slate-400 shrink-0">{new Date(a.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* גרף רשומות לפי ישות */}
           {data.entities.length > 0 && (
