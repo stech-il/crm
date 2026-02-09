@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user || (session.user as { role?: string }).role !== "admin") {
       return NextResponse.json({ error: "אין הרשאה" }, { status: 403 });
     }
-    const { name, email, password } = await request.json();
+    const { name, email, password, role } = await request.json();
     if (!name || !email) {
       return NextResponse.json({ error: "נא למלא שם ואימייל" }, { status: 400 });
     }
@@ -38,9 +38,8 @@ export async function POST(request: NextRequest) {
     const hash = password && password.length >= 6
       ? await bcrypt.hash(password, 10)
       : null;
-    // רק admin@crm.com יכול להיות אדמין - משתמשים חדשים תמיד רגילים
     const user = await prisma.user.create({
-      data: { name, email, password: hash, role: "user", status: "approved" },
+      data: { name, email, password: hash, role: role === "admin" ? "admin" : "user", status: "approved" },
     });
     return NextResponse.json(excludePassword(user));
   } catch (error) {

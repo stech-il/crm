@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Users, Pencil, Trash2, CheckCircle } from "lucide-react";
+import { Plus, Users, Pencil, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { usePolling } from "../lib/usePolling";
 import Modal from "./Modal";
 
@@ -21,7 +21,8 @@ export default function UsersAdmin() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<UserItem | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [rejectConfirm, setRejectConfirm] = useState<UserItem | null>(null);
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "user" as string });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,10 +40,10 @@ export default function UsersAdmin() {
   const openModal = (user?: UserItem) => {
     if (user) {
       setEditingUser(user);
-      setForm({ name: user.name, email: user.email || "", password: "" });
+      setForm({ name: user.name, email: user.email || "", password: "", role: user.role || "user" });
     } else {
       setEditingUser(null);
-      setForm({ name: "", email: "", password: "" });
+      setForm({ name: "", email: "", password: "", role: "user" });
     }
     setError("");
     setModalOpen(true);
@@ -71,6 +72,7 @@ export default function UsersAdmin() {
         const body: Record<string, unknown> = {
           name: form.name.trim(),
           email: form.email.trim(),
+          role: form.role,
         };
         if (form.password) body.password = form.password;
         const res = await fetch(`/api/users/${editingUser.id}`, {
@@ -88,6 +90,7 @@ export default function UsersAdmin() {
             name: form.name.trim(),
             email: form.email.trim(),
             password: form.password,
+            role: form.role,
           }),
         });
         const data = await res.json();
@@ -106,6 +109,13 @@ export default function UsersAdmin() {
     if (!deleteConfirm) return;
     await fetch(`/api/users/${deleteConfirm.id}`, { method: "DELETE" });
     setDeleteConfirm(null);
+    fetchUsers();
+  };
+
+  const rejectUser = async () => {
+    if (!rejectConfirm) return;
+    await fetch(`/api/users/${rejectConfirm.id}`, { method: "DELETE" });
+    setRejectConfirm(null);
     fetchUsers();
   };
 
@@ -186,16 +196,25 @@ export default function UsersAdmin() {
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-1">
                     {user.status === "pending" && (
-                      <button
-                        onClick={async () => {
-                          await fetch(`/api/users/${user.id}/approve`, { method: "POST" });
-                          fetchUsers();
-                        }}
-                        className="rounded-lg p-2 text-emerald-600 hover:bg-emerald-50"
-                        title="אשר משתמש"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={async () => {
+                            await fetch(`/api/users/${user.id}/approve`, { method: "POST" });
+                            fetchUsers();
+                          }}
+                          className="rounded-lg p-2 text-emerald-600 hover:bg-emerald-50"
+                          title="אשר משתמש"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setRejectConfirm(user)}
+                          className="rounded-lg p-2 text-amber-600 hover:bg-amber-50"
+                          title="דחה (מחק הרשמה)"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={() => openModal(user)}
@@ -204,15 +223,13 @@ export default function UsersAdmin() {
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
-                    {user.email !== "admin@crm.com" && (
-                      <button
-                        onClick={() => setDeleteConfirm(user)}
-                        className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
-                        title="מחק"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setDeleteConfirm(user)}
+                      className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                      title="מחק"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -272,14 +289,17 @@ export default function UsersAdmin() {
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             />
           </div>
-          {editingUser && (
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">תפקיד</label>
-              <p className="text-sm text-slate-600">
-                {editingUser.email === "admin@crm.com" ? "אדמין" : "משתמש"} (רק admin@crm.com הוא אדמין)
-              </p>
-            </div>
-          )}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">תפקיד</label>
+            <select
+              value={form.role}
+              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            >
+              <option value="user">משתמש</option>
+              <option value="admin">אדמין</option>
+            </select>
+          </div>
           <div className="flex gap-2 pt-2">
             <button
               type="submit"
@@ -318,6 +338,34 @@ export default function UsersAdmin() {
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
+                className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium text-slate-600 hover:bg-slate-50"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={!!rejectConfirm}
+        onClose={() => setRejectConfirm(null)}
+        title="דחיית הרשמה"
+      >
+        {rejectConfirm && (
+          <div className="space-y-4">
+            <p className="text-slate-600">
+              לדחות את בקשת ההרשמה של &quot;{rejectConfirm.name}&quot;? המשתמש יימחק מהמערכת ולא יוכל להתחבר.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={rejectUser}
+                className="flex-1 rounded-lg bg-amber-600 py-2.5 font-medium text-white hover:bg-amber-700"
+              >
+                דחה ומחק
+              </button>
+              <button
+                onClick={() => setRejectConfirm(null)}
                 className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium text-slate-600 hover:bg-slate-50"
               >
                 ביטול
