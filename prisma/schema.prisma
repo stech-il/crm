@@ -74,6 +74,7 @@ model DynamicRecord {
   entityId    String
   entity      Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
   data        Json
+  isArchived  Boolean  @default(false)  // ארכוב - לא נמחק, רק מוסתר
   createdById String?
   createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())

@@ -72,13 +72,13 @@ export async function POST(
         fieldIdMap[f.id] = created.id;
       }
 
-      const records = (data.records || []) as { id: string; entityId: string; data: object; createdById?: string }[];
+      const records = (data.records || []) as { id: string; entityId: string; data: object; createdById?: string; isArchived?: boolean }[];
       const recordIdMap: Record<string, string> = {};
       for (const r of records) {
         const newEntityId = entityIdMap[r.entityId];
         if (!newEntityId) continue;
         const created = await tx.dynamicRecord.create({
-          data: { entityId: newEntityId, data: r.data, createdById: r.createdById },
+          data: { entityId: newEntityId, data: r.data, createdById: r.createdById, isArchived: r.isArchived ?? false },
         });
         recordIdMap[r.id] = created.id;
       }

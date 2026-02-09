@@ -46,9 +46,12 @@ export async function PATCH(
     const body = await request.json();
     const session = await getSession();
     const createdById = (session?.user as { id?: string })?.id || null;
+    const updateData: { data?: object; isArchived?: boolean; updatedAt: Date } = { updatedAt: new Date() };
+    if (body.data !== undefined) updateData.data = body.data;
+    if (typeof body.isArchived === "boolean") updateData.isArchived = body.isArchived;
     const record = await prisma.dynamicRecord.update({
       where: { id },
-      data: { data: body.data, updatedAt: new Date() },
+      data: updateData,
     });
     await createActivity(record.id, "updated", null, createdById);
     return NextResponse.json(record);
@@ -58,7 +61,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ entitySlug: string; id: string }> }
 ) {
   const { entitySlug, id } = await params;
@@ -66,7 +69,17 @@ export async function DELETE(
     const entity = await prisma.entity.findUnique({ where: { slug: entitySlug } });
     if (!entity) return NextResponse.json({ error: "Entity not found" }, { status: 404 });
 
-    await prisma.dynamicRecord.delete({ where: { id } });
+    const { searchParams } = new URL(request.url);
+    const permanent = searchParams.get("permanent") === "1";
+
+    if (permanent) {
+      await prisma.dynamicRecord.delete({ where: { id } });
+    } else {
+      await prisma.dynamicRecord.update({
+        where: { id },
+        data: { isArchived: true, updatedAt: new Date() },
+      });
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete record" }, { status: 500 });

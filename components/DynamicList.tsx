@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Download, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List } from "lucide-react";
+import { Plus, Search, Download, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List, Archive } from "lucide-react";
 import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
 
@@ -29,6 +29,7 @@ export default function DynamicList({ entitySlug }: Props) {
   const [saveViewName, setSaveViewName] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "pipeline">("table");
   const [pipelineField, setPipelineField] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
 
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
@@ -37,8 +38,9 @@ export default function DynamicList({ entitySlug }: Props) {
       p.set("filter", JSON.stringify([{ field: filterField, op: "contains", value: filterValue }]));
     }
     if (sortField) p.set("sort", JSON.stringify({ field: sortField, dir: sortDir }));
+    if (showArchived) p.set("archived", "1");
     return p.toString();
-  }, [search, filterField, filterValue, sortField, sortDir]);
+  }, [search, filterField, filterValue, sortField, sortDir, showArchived]);
 
   const fetchData = useCallback(() => {
     const qs = buildParams();
@@ -109,6 +111,21 @@ export default function DynamicList({ entitySlug }: Props) {
       setSortField(field);
       setSortDir("asc");
     }
+  };
+
+  const moveRecordToColumn = async (recordId: string, newValue: string) => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: { ...((records.find((r) => r.id === recordId)?.data as Record<string, unknown>) || {}), [pipelineField]: newValue } }),
+    });
+    fetchData();
+  };
+
+  const handlePipelineDrop = (e: React.DragEvent, colValue: string) => {
+    e.preventDefault();
+    const recordId = e.dataTransfer.getData("recordId");
+    if (recordId) moveRecordToColumn(recordId, colValue);
   };
 
   if (!entity) {
@@ -201,6 +218,14 @@ export default function DynamicList({ entitySlug }: Props) {
             className="w-full rounded-lg border border-slate-300 py-2 pr-10 pl-3 text-sm"
           />
         </div>
+        <button
+          onClick={() => setShowArchived(!showArchived)}
+          className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm ${showArchived ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+          title={showArchived ? "הצג רק ארכיון" : "הצג ארכיון"}
+        >
+          <Archive className="h-4 w-4" />
+          {showArchived ? "ארכיון" : "פעיל"}
+        </button>
         <button
           onClick={() => setShowFilter(!showFilter)}
           className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm ${showFilter ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
@@ -300,16 +325,27 @@ export default function DynamicList({ entitySlug }: Props) {
       {viewMode === "pipeline" && pipelineField ? (
         <div className="flex gap-4 overflow-x-auto pb-4">
           {pipelineColumns.map((col) => (
-            <div key={col || "_empty"} className="flex-shrink-0 w-72 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
+            <div
+              key={col || "_empty"}
+              className="flex-shrink-0 w-72 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handlePipelineDrop(e, col)}
+            >
               <div className="px-4 py-3 bg-slate-200 font-semibold text-slate-700">
                 {col || "(ללא ערך)"}
               </div>
               <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto">
                 {recordsByColumn[col]?.map((r) => (
-                  <Link
+                  <div
                     key={r.id}
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData("recordId", r.id)}
+                    className="block rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:border-primary-300 hover:shadow cursor-grab active:cursor-grabbing"
+                  >
+                  <Link
                     href={`/dynamic/${entitySlug}/${r.id}`}
-                    className="block rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:border-primary-300 hover:shadow"
+                    className="block"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <p className="font-medium text-primary-600 truncate">
                       {displayFields[0]
@@ -320,6 +356,8 @@ export default function DynamicList({ entitySlug }: Props) {
                       {new Date(r.updatedAt).toLocaleDateString("he-IL")}
                     </p>
                   </Link>
+                  <p className="text-xs text-slate-400 mt-1">גרור לשינוי סטטוס</p>
+                  </div>
                 )) ?? []}
               </div>
             </div>

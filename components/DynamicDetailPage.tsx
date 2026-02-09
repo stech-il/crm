@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy, Archive, ArchiveRestore } from "lucide-react";
+import Modal from "./Modal";
 import { formatFieldValue, formatFieldValueForTitle, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
 
@@ -16,6 +18,7 @@ type DynamicRecordData = {
   id: string;
   data: Record<string, unknown>;
   updatedAt: string;
+  isArchived?: boolean;
   createdBy?: { id: string; name: string } | null;
   tasks?: Task[];
   callLogs?: CallLog[];
@@ -50,6 +53,8 @@ export default function DynamicDetailPage({
   const [newCallPhone, setNewCallPhone] = useState("");
   const [newCallNotes, setNewCallNotes] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const router = useRouter();
 
   const fetchData = useCallback(() => {
     fetch(`/api/dynamic/${entitySlug}/${recordId}`)
@@ -153,10 +158,34 @@ export default function DynamicDetailPage({
     const res = await fetch(`/api/dynamic/${entitySlug}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: record?.data }),
+      body: JSON.stringify({ data: record?.data, copyTasks: true, sourceRecordId: recordId }),
     });
     const newRecord = await res.json();
-    if (newRecord?.id) window.location.href = `/dynamic/${entitySlug}/${newRecord.id}`;
+    if (newRecord?.id) router.push(`/dynamic/${entitySlug}/${newRecord.id}`);
+  };
+
+  const archiveRecord = async () => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isArchived: true }),
+    });
+    router.push(`/dynamic/${entitySlug}`);
+  };
+
+  const unarchiveRecord = async () => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isArchived: false }),
+    });
+    fetchData();
+  };
+
+  const deletePermanent = async () => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}?permanent=1`, { method: "DELETE" });
+    setShowDeleteModal(false);
+    router.push(`/dynamic/${entitySlug}`);
   };
 
   if (!entity || !record) {
@@ -187,7 +216,16 @@ export default function DynamicDetailPage({
             <p className="mt-1 text-sm text-slate-500">נוצר ע״י {record.createdBy.name}</p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {record.isArchived && (
+            <button
+              onClick={unarchiveRecord}
+              className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100"
+            >
+              <ArchiveRestore className="h-4 w-4" />
+              שחזר מארכיון
+            </button>
+          )}
           <button
             onClick={duplicateRecord}
             className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
@@ -202,6 +240,22 @@ export default function DynamicDetailPage({
             <Pencil className="h-4 w-4" />
             עריכה
           </Link>
+          {!record.isArchived && (
+            <button
+              onClick={archiveRecord}
+              className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              <Archive className="h-4 w-4" />
+              ארכב
+            </button>
+          )}
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            מחק לצמיתות
+          </button>
         </div>
       </div>
 
@@ -429,6 +483,18 @@ export default function DynamicDetailPage({
           {activities.length === 0 && <p className="text-sm text-slate-500">אין פעילות</p>}
         </ul>
       </div>
+
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="מחיקה לצמיתות">
+        <p className="text-slate-600 mb-4">האם אתה בטוח שברצונך למחוק רשומה זו לצמיתות? לא ניתן לשחזר.</p>
+        <div className="flex gap-2 justify-end">
+          <button onClick={() => setShowDeleteModal(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            ביטול
+          </button>
+          <button onClick={deletePermanent} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+            מחק לצמיתות
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

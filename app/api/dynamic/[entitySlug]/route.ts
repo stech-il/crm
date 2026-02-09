@@ -19,9 +19,13 @@ export async function GET(
     const filterJson = searchParams.get("filter");
     const sortJson = searchParams.get("sort");
     const format = searchParams.get("format");
+    const includeArchived = searchParams.get("archived") === "1";
+
+    const where: { entityId: string; isArchived?: boolean } = { entityId: entity.id };
+    if (!includeArchived) where.isArchived = false;
 
     let records = await prisma.dynamicRecord.findMany({
-      where: { entityId: entity.id },
+      where,
       orderBy: { updatedAt: "desc" },
     });
 
@@ -122,6 +126,9 @@ export async function POST(
 
     const body = await request.json();
     const createdById = (session?.user as { id?: string })?.id || null;
+    const copyTasks = body.copyTasks === true;
+    const sourceRecordId = body.sourceRecordId;
+
     const record = await prisma.dynamicRecord.create({
       data: {
         entityId: entity.id,
@@ -130,6 +137,25 @@ export async function POST(
       },
     });
     await createActivity(record.id, "created", null, createdById);
+
+    if (copyTasks && sourceRecordId) {
+      const tasks = await prisma.recordTask.findMany({
+        where: { recordId: sourceRecordId },
+        orderBy: { order: "asc" },
+      });
+      for (const t of tasks) {
+        await prisma.recordTask.create({
+          data: {
+            recordId: record.id,
+            title: t.title,
+            done: false,
+            dueDate: t.dueDate,
+            order: t.order,
+            createdById,
+          },
+        });
+      }
+    }
     return NextResponse.json(record);
   } catch (error) {
     return NextResponse.json({ error: "Failed to create record" }, { status: 500 });
