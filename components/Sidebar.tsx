@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { LayoutDashboard, Settings, Users, Database, Clock } from "lucide-react";
+import { LayoutDashboard, Settings, Users, Database, Clock, Book } from "lucide-react";
 import { getEntityIcon } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
 import { getRecentlyViewed, type RecentItem } from "../lib/recentlyViewed";
@@ -51,6 +51,7 @@ export default function Sidebar() {
     { href: "/admin", label: "ניהול", icon: Settings },
     { href: "/admin/users", label: "משתמשים", icon: Users },
     ...(isAdmin ? [{ href: "/admin/backups", label: "גיבויים", icon: Database }] : []),
+    { href: "/api-docs", label: "תיעוד API", icon: Book },
   ];
 
   return (
