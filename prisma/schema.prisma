@@ -17,8 +17,8 @@ model User {
   image           String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  createdRecords  DynamicRecord[]
-  assignedRecords DynamicRecord[]
+  createdRecords  DynamicRecord[] @relation("createdBy")
+  assignedRecords DynamicRecord[] @relation("assignedTo")
   tasks           RecordTask[]
   callLogs        CallLog[]
   backups         Backup[]
@@ -87,9 +87,9 @@ model DynamicRecord {
   data          Json
   isArchived    Boolean    @default(false)  // ארכוב - לא נמחק, רק מוסתר
   createdById   String?
-  createdBy     User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy     User?      @relation("createdBy", fields: [createdById], references: [id], onDelete: SetNull)
   assignedToId  String?    // משתמש אחראי
-  assignedTo    User?      @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedTo    User?      @relation("assignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   activities    DynamicActivity[]
