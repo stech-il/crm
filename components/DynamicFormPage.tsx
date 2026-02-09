@@ -16,6 +16,7 @@ export default function DynamicFormPage({
   const router = useRouter();
   const [entity, setEntity] = useState<DynamicEntity | null>(null);
   const [initialData, setInitialData] = useState<Record<string, unknown>>({});
+  const [templates, setTemplates] = useState<{ id: string; name: string; data: object }[]>([]);
 
   useEffect(() => {
     if (recordId) {
@@ -31,6 +32,10 @@ export default function DynamicFormPage({
         .then((res) => {
           if (res.entity) setEntity(normalizeEntity(res.entity));
         });
+      fetch(`/api/dynamic/${entitySlug}/templates`)
+        .then((r) => r.json())
+        .then((t) => setTemplates(Array.isArray(t) ? t : []))
+        .catch(() => setTemplates([]));
     }
   }, [entitySlug, recordId]);
 
@@ -87,6 +92,24 @@ export default function DynamicFormPage({
       <h1 className="mb-6 text-2xl font-bold text-slate-800">
         {recordId ? "עריכה" : "חדש"} - {entity.name}
       </h1>
+      {!recordId && templates.length > 0 && (
+        <div className="mb-6 flex items-center gap-2">
+          <span className="text-sm text-slate-600">תבנית:</span>
+          <select
+            onChange={(e) => {
+              const t = templates.find((x) => x.id === e.target.value);
+              if (t) setInitialData((t.data as Record<string, unknown>) || {});
+              else setInitialData({});
+            }}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="">ריק</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <DynamicForm
         entity={entity}
         initialData={initialData}

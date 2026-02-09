@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Plus, Settings, ChevronDown, Pencil, Trash2, Database, RotateCcw } from "lucide-react";
+import { Plus, Settings, ChevronDown, Pencil, Trash2, Database, RotateCcw, Tag } from "lucide-react";
 import { FIELD_TYPES } from "../lib/fieldTypes";
 import { ENTITY_ICONS } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
@@ -64,6 +64,8 @@ export default function AdminPanel() {
   const [fieldError, setFieldError] = useState("");
   const fieldNameSeedRef = useRef<string | null>(null);
   const [backupCreating, setBackupCreating] = useState(false);
+  const [tags, setTags] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [newTagName, setNewTagName] = useState("");
   const { data: session } = useSession();
   const isAdmin = (session?.user as { role?: string })?.role === "admin";
 
@@ -80,7 +82,15 @@ export default function AdminPanel() {
       .finally(() => setLoading(false));
   };
 
+  const fetchTags = () => fetch("/api/admin/tags").then((r) => r.json()).then((t) => setTags(Array.isArray(t) ? t : [])).catch(() => setTags([]));
+  const addTag = async () => {
+    if (!newTagName.trim()) return;
+    await fetch("/api/admin/tags", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newTagName.trim() }) });
+    setNewTagName("");
+    fetchTags();
+  };
   useEffect(() => fetchEntities(), []);
+  useEffect(() => { if (isAdmin) fetchTags(); }, [isAdmin]);
   usePolling(fetchEntities);
 
   const openEntityModal = (entity?: Entity) => {
@@ -352,6 +362,39 @@ export default function AdminPanel() {
       <p className="mb-6 text-slate-600">
         הגדרת ישויות ושדות. כל שדה ניתן להגדרה דינמית – טקסט, מספר, תאריך, בחירה מרשימה ועוד.
       </p>
+
+      {isAdmin && (
+        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <Tag className="h-5 w-5" />
+            תגיות
+          </h2>
+          <p className="mb-4 text-sm text-slate-600">תגיות לסיווג רשומות. ניתן להוסיף תגיות לרשומות בהצגת הכרטיס.</p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {tags.map((t) => (
+              <span key={t.id} className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm" style={{ backgroundColor: t.color + "20", color: t.color }}>
+                {t.name}
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="שם תגית חדשה"
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addTag()}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm w-40"
+            />
+            <button
+              onClick={addTag}
+              className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            >
+              הוסף תגית
+            </button>
+          </div>
+        </div>
+      )}
 
       {isAdmin && (
         <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

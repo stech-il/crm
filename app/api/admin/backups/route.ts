@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (!admin && !allowedBySecret) return NextResponse.json({ error: "לא מורשה" }, { status: 403 });
 
   try {
-    const [users, entities, fieldDefinitions, records, tasks, callLogs, notes] = await Promise.all([
+    const [users, entities, fieldDefinitions, records, tasks, callLogs, notes, tags, recordTags, templates] = await Promise.all([
       prisma.user.findMany({ select: { id: true, name: true, email: true, role: true, createdAt: true } }),
       prisma.entity.findMany({ orderBy: { order: "asc" } }),
       prisma.fieldDefinition.findMany({ orderBy: { order: "asc" } }),
@@ -47,12 +47,15 @@ export async function POST(req: NextRequest) {
       prisma.recordTask.findMany(),
       prisma.callLog.findMany({ include: { createdBy: { select: { name: true } } } }),
       prisma.recordNote.findMany({ include: { createdBy: { select: { name: true } } } }),
+      prisma.tag.findMany(),
+      prisma.recordTag.findMany(),
+      prisma.recordTemplate.findMany(),
     ]);
 
     const backupData = {
       version: 1,
       exportedAt: new Date().toISOString(),
-      data: { users, entities, fieldDefinitions, records, tasks, callLogs, notes },
+      data: { users, entities, fieldDefinitions, records, tasks, callLogs, notes, tags, recordTags, templates },
     };
 
     const backup = await prisma.backup.create({

@@ -124,6 +124,31 @@ export default function Dashboard() {
             </Link>
           </div>
 
+          {/* גרף רשומות לפי ישות */}
+          {data.entities.length > 0 && (
+            <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-slate-800">רשומות לפי ישות</h2>
+              <div className="space-y-2">
+                {data.entities.map((e) => {
+                  const max = Math.max(...data.entities.map((x) => x.recordsCount), 1);
+                  const pct = (e.recordsCount / max) * 100;
+                  return (
+                    <div key={e.id} className="flex items-center gap-3">
+                      <span className="w-24 text-sm text-slate-600 truncate">{e.name}</span>
+                      <div className="flex-1 h-6 bg-slate-100 rounded overflow-hidden">
+                        <div
+                          className="h-full bg-primary-500 rounded transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-8 text-sm font-medium text-slate-700">{e.recordsCount}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* כרטיסי ישויות */}
           <div>
             <h2 className="mb-4 text-lg font-semibold text-slate-800">גישה מהירה</h2>

@@ -25,11 +25,13 @@ export default function DynamicList({ entitySlug }: Props) {
   const [sortField, setSortField] = useState("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
+  const [allTags, setAllTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const [saveViewName, setSaveViewName] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "pipeline">("table");
   const [pipelineField, setPipelineField] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [filterTags, setFilterTags] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -44,10 +46,11 @@ export default function DynamicList({ entitySlug }: Props) {
     }
     if (sortField) p.set("sort", JSON.stringify({ field: sortField, dir: sortDir }));
     if (showArchived) p.set("archived", "1");
+    if (filterTags.length > 0) p.set("tags", filterTags.join(","));
     p.set("page", String(page));
     p.set("limit", "25");
     return p.toString();
-  }, [search, filterField, filterValue, sortField, sortDir, showArchived, page]);
+  }, [search, filterField, filterValue, sortField, sortDir, showArchived, filterTags, page]);
 
   const fetchData = useCallback(() => {
     const qs = buildParams();
@@ -64,7 +67,7 @@ export default function DynamicList({ entitySlug }: Props) {
 
   useEffect(() => fetchData(), [fetchData]);
   usePolling(fetchData, [entitySlug, buildParams]);
-  useEffect(() => setPage(1), [search, filterField, filterValue, showArchived]);
+  useEffect(() => setPage(1), [search, filterField, filterValue, showArchived, filterTags]);
 
   const fetchViews = useCallback(() => {
     fetch(`/api/saved-views?module=${entitySlug}`)
@@ -74,6 +77,9 @@ export default function DynamicList({ entitySlug }: Props) {
   }, [entitySlug]);
 
   useEffect(() => fetchViews(), [fetchViews]);
+  useEffect(() => {
+    fetch("/api/tags").then((r) => r.json()).then((t) => setAllTags(Array.isArray(t) ? t : [])).catch(() => setAllTags([]));
+  }, []);
 
   const applyView = (v: SavedView) => {
     if (v.filter) {
@@ -342,7 +348,7 @@ export default function DynamicList({ entitySlug }: Props) {
         )}
       </div>
       {showFilter && (
-        <div className="mb-4 flex gap-2 items-center rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="mb-4 flex flex-wrap gap-2 items-center rounded-lg border border-slate-200 bg-slate-50 p-3">
           <select
             value={filterField}
             onChange={(e) => setFilterField(e.target.value)}
@@ -360,6 +366,21 @@ export default function DynamicList({ entitySlug }: Props) {
             onChange={(e) => setFilterValue(e.target.value)}
             className="rounded border border-slate-300 px-2 py-1.5 text-sm w-40"
           />
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mr-2">
+              <span className="text-xs text-slate-500 py-1">תגיות:</span>
+              {allTags.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setFilterTags((prev) => prev.includes(t.id) ? prev.filter((x) => x !== t.id) : [...prev, t.id])}
+                  className={`text-xs px-2 py-1 rounded-full ${filterTags.includes(t.id) ? "ring-2 ring-offset-1" : ""}`}
+                  style={{ backgroundColor: filterTags.includes(t.id) ? t.color : t.color + "30", color: filterTags.includes(t.id) ? "white" : t.color }}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

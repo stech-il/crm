@@ -18,6 +18,7 @@ model User {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   createdRecords  DynamicRecord[]
+  assignedRecords DynamicRecord[]
   tasks           RecordTask[]
   callLogs        CallLog[]
   backups         Backup[]
@@ -34,6 +35,15 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 }
 
+// תגיות גלובליות - אדמין מגדיר
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#6366f1")  // hex
+  createdAt DateTime @default(now())
+  records   RecordTag[]
+}
+
 // ישות דינמית - אדמין מגדיר
 model Entity {
   id          String   @id @default(cuid())
@@ -45,6 +55,7 @@ model Entity {
   updatedAt   DateTime @updatedAt
   fields      FieldDefinition[]
   records     DynamicRecord[]
+  templates   RecordTemplate[]
 }
 
 // הגדרת שדה
@@ -70,20 +81,44 @@ model FieldDefinition {
 
 // רשומה דינמית
 model DynamicRecord {
-  id          String   @id @default(cuid())
-  entityId    String
-  entity      Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  data        Json
-  isArchived  Boolean  @default(false)  // ארכוב - לא נמחק, רק מוסתר
-  createdById String?
-  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  activities  DynamicActivity[]
-  files       RecordFile[]
-  tasks       RecordTask[]
-  callLogs    CallLog[]
-  notes       RecordNote[]
+  id            String     @id @default(cuid())
+  entityId      String
+  entity        Entity     @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  data          Json
+  isArchived    Boolean    @default(false)  // ארכוב - לא נמחק, רק מוסתר
+  createdById   String?
+  createdBy     User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  assignedToId  String?    // משתמש אחראי
+  assignedTo    User?      @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  activities    DynamicActivity[]
+  files         RecordFile[]
+  tasks         RecordTask[]
+  callLogs      CallLog[]
+  notes         RecordNote[]
+  tags          RecordTag[]
+}
+
+// קישור רשומה-תגית
+model RecordTag {
+  id        String         @id @default(cuid())
+  recordId  String
+  record    DynamicRecord  @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       Tag            @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  @@unique([recordId, tagId])
+}
+
+// תבניות רשומה - יצירה מהירה
+model RecordTemplate {
+  id        String   @id @default(cuid())
+  entityId  String
+  entity    Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  name      String
+  data      Json     // נתוני ברירת מחדל
+  createdAt DateTime @default(now())
 }
 
 // משימות לרשומה

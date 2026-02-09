@@ -21,9 +21,11 @@ export async function GET(
         activities: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
         files: true,
         createdBy: { select: { id: true, name: true } },
+        assignedTo: { select: { id: true, name: true } },
         tasks: { orderBy: { order: "asc" } },
         callLogs: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
         notes: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
+        tags: { include: { tag: true } },
       },
     });
     if (!record) return NextResponse.json({ error: "Record not found" }, { status: 404 });
@@ -46,9 +48,10 @@ export async function PATCH(
     const body = await request.json();
     const session = await getSession();
     const createdById = (session?.user as { id?: string })?.id || null;
-    const updateData: { data?: object; isArchived?: boolean; updatedAt: Date } = { updatedAt: new Date() };
+    const updateData: { data?: object; isArchived?: boolean; assignedToId?: string | null; updatedAt: Date } = { updatedAt: new Date() };
     if (body.data !== undefined) updateData.data = body.data;
     if (typeof body.isArchived === "boolean") updateData.isArchived = body.isArchived;
+    if (body.assignedToId !== undefined) updateData.assignedToId = body.assignedToId || null;
     const record = await prisma.dynamicRecord.update({
       where: { id },
       data: updateData,

@@ -27,7 +27,7 @@ export async function POST(
     const backup = await prisma.backup.findUnique({ where: { id } });
     if (!backup) return NextResponse.json({ error: "גיבוי לא נמצא" }, { status: 404 });
 
-    const b = backup.data as { version?: number; data?: { users?: unknown[]; entities?: unknown[]; fieldDefinitions?: unknown[]; records?: unknown[]; tasks?: unknown[]; callLogs?: unknown[]; notes?: unknown[] } };
+    const b = backup.data as { version?: number; data?: { users?: unknown[]; entities?: unknown[]; fieldDefinitions?: unknown[]; records?: unknown[]; tasks?: unknown[]; callLogs?: unknown[]; notes?: unknown[]; tags?: unknown[]; recordTags?: unknown[]; templates?: unknown[] } };
     const data = b?.data;
     if (!data) return NextResponse.json({ error: "פורמט גיבוי לא תקין" }, { status: 400 });
 
@@ -35,7 +35,10 @@ export async function POST(
       await tx.callLog.deleteMany();
       await tx.recordTask.deleteMany();
       await tx.recordNote.deleteMany();
+      await tx.recordTag.deleteMany();
+      await tx.recordTemplate.deleteMany();
       await tx.dynamicRecord.deleteMany();
+      await tx.tag.deleteMany();
       await tx.fieldDefinition.deleteMany();
       await tx.entity.deleteMany();
       await tx.dynamicActivity.deleteMany();
@@ -72,13 +75,13 @@ export async function POST(
         fieldIdMap[f.id] = created.id;
       }
 
-      const records = (data.records || []) as { id: string; entityId: string; data: object; createdById?: string; isArchived?: boolean }[];
+      const records = (data.records || []) as { id: string; entityId: string; data: object; createdById?: string; assignedToId?: string; isArchived?: boolean }[];
       const recordIdMap: Record<string, string> = {};
       for (const r of records) {
         const newEntityId = entityIdMap[r.entityId];
         if (!newEntityId) continue;
         const created = await tx.dynamicRecord.create({
-          data: { entityId: newEntityId, data: r.data, createdById: r.createdById, isArchived: r.isArchived ?? false },
+          data: { entityId: newEntityId, data: r.data, createdById: r.createdById, assignedToId: r.assignedToId, isArchived: r.isArchived ?? false },
         });
         recordIdMap[r.id] = created.id;
       }
@@ -119,6 +122,28 @@ export async function POST(
         await tx.recordNote.create({
           data: { recordId: newRecordId, content: n.content, createdById: n.createdById },
         });
+      }
+
+      const tags = (data.tags || []) as { id: string; name: string; color: string }[];
+      const tagIdMap: Record<string, string> = {};
+      for (const t of tags) {
+        const created = await tx.tag.create({ data: { name: t.name, color: t.color || "#6366f1" } });
+        tagIdMap[t.id] = created.id;
+      }
+
+      const recordTags = (data.recordTags || []) as { recordId: string; tagId: string }[];
+      for (const rt of recordTags) {
+        const newRecordId = recordIdMap[rt.recordId];
+        const newTagId = tagIdMap[rt.tagId];
+        if (!newRecordId || !newTagId) continue;
+        await tx.recordTag.create({ data: { recordId: newRecordId, tagId: newTagId } });
+      }
+
+      const templates = (data.templates || []) as { entityId: string; name: string; data: object }[];
+      for (const t of templates) {
+        const newEntityId = entityIdMap[t.entityId];
+        if (!newEntityId) continue;
+        await tx.recordTemplate.create({ data: { entityId: newEntityId, name: t.name, data: t.data } });
       }
     });
 

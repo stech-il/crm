@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("[Backup] מתחיל גיבוי...");
 
-  const [users, entities, fieldDefinitions, records, tasks, callLogs, notes] = await Promise.all([
+  const [users, entities, fieldDefinitions, records, tasks, callLogs, notes, tags, recordTags, templates] = await Promise.all([
     prisma.user.findMany({ select: { id: true, name: true, email: true, role: true, createdAt: true } }),
     prisma.entity.findMany({ orderBy: { order: "asc" } }),
     prisma.fieldDefinition.findMany({ orderBy: { order: "asc" } }),
@@ -17,13 +17,16 @@ async function main() {
     prisma.recordTask.findMany(),
     prisma.callLog.findMany({ include: { createdBy: { select: { name: true } } } }),
     prisma.recordNote.findMany({ include: { createdBy: { select: { name: true } } } }),
+    prisma.tag.findMany(),
+    prisma.recordTag.findMany(),
+    prisma.recordTemplate.findMany(),
   ]);
 
   const backupData = {
     version: 1,
     exportedAt: new Date().toISOString(),
     source: "daily-cron",
-    data: { users, entities, fieldDefinitions, records, tasks, callLogs, notes },
+    data: { users, entities, fieldDefinitions, records, tasks, callLogs, notes, tags, recordTags, templates },
   };
 
   const backup = await prisma.backup.create({

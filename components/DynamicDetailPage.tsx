@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy, Archive, ArchiveRestore, Printer, Link2 } from "lucide-react";
+import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy, Archive, ArchiveRestore, Printer, Link2, FileText } from "lucide-react";
 import Modal from "./Modal";
 import { formatFieldValue, formatFieldValueForTitle, isFileValue } from "../lib/formatFieldValue";
+import { addRecentlyViewed } from "../lib/recentlyViewed";
 import { usePolling } from "../lib/usePolling";
 
 type FieldDef = { id: string; name: string; label: string; type: string; showInCard?: boolean };
@@ -14,16 +15,19 @@ type Task = { id: string; title: string; done: boolean; order: number; dueDate?:
 type CallLog = { id: string; phoneNumber: string; direction: string; duration?: number; notes?: string; createdAt: string; createdBy?: { name: string } };
 type ActivityItem = { id: string; type: string; content: string | null; createdAt: string; createdBy?: { name: string } | null };
 type Note = { id: string; content: string; createdAt: string; createdBy?: { name: string } | null };
+type RecordTag = { id: string; tag: { id: string; name: string; color: string } };
 type DynamicRecordData = {
   id: string;
   data: Record<string, unknown>;
   updatedAt: string;
   isArchived?: boolean;
   createdBy?: { id: string; name: string } | null;
+  assignedTo?: { id: string; name: string } | null;
   tasks?: Task[];
   callLogs?: CallLog[];
   activities?: ActivityItem[];
   notes?: Note[];
+  tags?: RecordTag[];
 };
 
 const ACTIVITY_LABELS: Record<string, string> = {
@@ -55,6 +59,10 @@ export default function DynamicDetailPage({
   const [newNoteContent, setNewNoteContent] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [allTags, setAllTags] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
   const router = useRouter();
 
   const fetchData = useCallback(() => {
@@ -68,15 +76,20 @@ export default function DynamicDetailPage({
 
   useEffect(() => fetchData(), [entitySlug, recordId]);
   usePolling(fetchData, [entitySlug, recordId]);
+  useEffect(() => {
+    fetch("/api/tags").then((r) => r.json()).then((t) => setAllTags(Array.isArray(t) ? t : [])).catch(() => setAllTags([]));
+    fetch("/api/users").then((r) => r.json()).then((u) => setUsers(Array.isArray(u) ? u : [])).catch(() => setUsers([]));
+  }, []);
 
   useEffect(() => {
     if (entity && record) {
       const data = record.data as Record<string, unknown>;
       const title = formatFieldValueForTitle(data[entity.fields[0]?.name]) || record.id.slice(0, 8) || "רשומה";
       document.title = `${title} - ${entity.name} | CRM`;
+      addRecentlyViewed({ entitySlug, recordId, title });
     }
     return () => { document.title = "CRM"; };
-  }, [entity, record]);
+  }, [entity, record, entitySlug, recordId]);
 
   const addTask = async () => {
     if (!newTaskTitle.trim()) return;
@@ -203,6 +216,40 @@ export default function DynamicDetailPage({
 
   const printRecord = () => window.print();
 
+  const addTag = async (tagId: string) => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}/tags`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tagId }),
+    });
+    fetchData();
+  };
+
+  const removeTag = async (tagId: string) => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}/tags?tagId=${tagId}`, { method: "DELETE" });
+    fetchData();
+  };
+
+  const setAssignedUser = async (userId: string | null) => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignedToId: userId }),
+    });
+    fetchData();
+  };
+
+  const saveAsTemplate = async () => {
+    if (!templateName.trim()) return;
+    await fetch(`/api/dynamic/${entitySlug}/templates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: templateName.trim(), data: record?.data }),
+    });
+    setTemplateName("");
+    setShowSaveTemplate(false);
+  };
+
   if (!entity || !record) {
     return (
       <div className="p-8">
@@ -216,6 +263,7 @@ export default function DynamicDetailPage({
   const callLogs = record.callLogs || [];
   const activities = record.activities || [];
   const notes = record.notes || [];
+  const recordTags = record.tags || [];
 
   return (
     <div className="p-8">
@@ -227,9 +275,41 @@ export default function DynamicDetailPage({
           <h1 className="mt-2 text-2xl font-bold text-slate-800">
             {formatFieldValueForTitle(data[entity.fields[0]?.name]) || record.id.slice(0, 8) || "רשומה"}
           </h1>
-          {record.createdBy && (
-            <p className="mt-1 text-sm text-slate-500">נוצר ע״י {record.createdBy.name}</p>
-          )}
+          <div className="mt-1 flex flex-wrap gap-2 items-center">
+            {record.createdBy && (
+              <span className="text-sm text-slate-500">נוצר ע״י {record.createdBy.name}</span>
+            )}
+            <div className="flex items-center gap-1">
+              <span className="text-sm text-slate-500">אחראי:</span>
+              <select
+                value={record.assignedTo?.id || ""}
+                onChange={(e) => setAssignedUser(e.target.value || null)}
+                className="text-sm rounded border border-slate-200 px-2 py-0.5"
+              >
+                <option value="">ללא</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            </div>
+            {recordTags.map((rt) => (
+              <span key={rt.tag.id} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: rt.tag.color + "30", color: rt.tag.color }}>
+                {rt.tag.name}
+                <button onClick={() => removeTag(rt.tag.id)} className="hover:opacity-70">×</button>
+              </span>
+            ))}
+            {allTags.filter((t) => !recordTags.some((rt) => rt.tag.id === t.id)).length > 0 && (
+              <select
+                onChange={(e) => { const v = e.target.value; if (v) addTag(v); e.target.value = ""; }}
+                className="text-sm rounded border border-slate-200 px-2 py-0.5"
+              >
+                <option value="">+ תגית</option>
+                {allTags.filter((t) => !recordTags.some((rt) => rt.tag.id === t.id)).map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {record.isArchived && (
@@ -279,6 +359,14 @@ export default function DynamicDetailPage({
           >
             <Printer className="h-4 w-4" />
             הדפס
+          </button>
+          <button
+            onClick={() => setShowSaveTemplate(true)}
+            className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            title="שמור כתבנית"
+          >
+            <FileText className="h-4 w-4" />
+            שמור כתבנית
           </button>
           <button
             onClick={() => setShowDeleteModal(true)}
@@ -519,6 +607,25 @@ export default function DynamicDetailPage({
           {activities.length === 0 && <p className="text-sm text-slate-500">אין פעילות</p>}
         </ul>
       </div>
+
+      <Modal isOpen={showSaveTemplate} onClose={() => setShowSaveTemplate(false)} title="שמור כתבנית">
+        <p className="text-slate-600 mb-4">שמור את הרשומה הנוכחית כתבנית ליצירה מהירה.</p>
+        <input
+          type="text"
+          placeholder="שם התבנית"
+          value={templateName}
+          onChange={(e) => setTemplateName(e.target.value)}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 mb-4"
+        />
+        <div className="flex gap-2 justify-end">
+          <button onClick={() => setShowSaveTemplate(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            ביטול
+          </button>
+          <button onClick={saveAsTemplate} disabled={!templateName.trim()} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+            שמור
+          </button>
+        </div>
+      </Modal>
 
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="מחיקה לצמיתות">
         <p className="text-slate-600 mb-4">האם אתה בטוח שברצונך למחוק רשומה זו לצמיתות? לא ניתן לשחזר.</p>
