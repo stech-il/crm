@@ -16,7 +16,8 @@ services:
     name: crm-cloud
     runtime: node
     buildCommand: npm install && npx prisma generate && npx prisma db push --accept-data-loss && npm run build && (cp -r public .next/standalone/ 2>/dev/null || true) && (cp -r .next/static .next/standalone/.next/static) && npm run db:seed
-    startCommand: cd .next/standalone && node server.js
+    # NEXTAUTH_URL מוגדר אוטומטית מ-RENDER_EXTERNAL_URL (כתובת השרת האמיתית)
+    startCommand: sh -c 'export NEXTAUTH_URL="${NEXTAUTH_URL:-$RENDER_EXTERNAL_URL}" && cd .next/standalone && node server.js'
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -26,10 +27,7 @@ services:
         value: production
       - key: NEXTAUTH_SECRET
         generateValue: true
-      # חשוב: NEXTAUTH_URL חייב להיות כתובת האתר בפועל (לא localhost)
-      # אחרי הדיפלוי - עדכן ב-Render Dashboard ל-URL האמיתי, למשל: https://crm-cloud.onrender.com
-      - key: NEXTAUTH_URL
-        value: https://crm-cloud.onrender.com
+      # NEXTAUTH_URL - לא נדרש. ה-startCommand משתמש ב-RENDER_EXTERNAL_URL (הכתובת האוטומטית של Render)
     healthCheckPath: /api/health
 
 databases:

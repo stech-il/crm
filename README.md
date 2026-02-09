@@ -46,7 +46,7 @@ npm run dev
 חשוב: עם `output: 'standalone'` חייבים להריץ את `server.js` מתוך תיקיית standalone, לא `next start`.
 - **Environment:** `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CLOUDINARY_*`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (לשכחתי סיסמה)
 
-**חשוב:** `NEXTAUTH_URL` חייב להיות כתובת האתר בפועל (למשל `https://crm-cloud.onrender.com`). אם הוא מוגדר כ-`http://localhost:3000`, ההתנתקות תפנה ל-localhost במקום למסך החיבור.
+**ב-Render:** `NEXTAUTH_URL` מוגדר אוטומטית מ-`RENDER_EXTERNAL_URL` (כתובת השרת האמיתית). אין צורך להגדיר ידנית.
 
 **שגיאת "Cannot GET /login":** אם אתה מקבל שגיאה זו, נסה: (1) `npm run build` – וודא שהבנייה מצליחה; (2) וודא שאתה ניגש לכתובת הנכונה (למשל `https://yoursite.com/login` ולא רק `/login` בלי הדומיין).
 

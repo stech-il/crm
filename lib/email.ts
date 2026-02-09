@@ -25,7 +25,7 @@ export async function sendPasswordResetEmail(
     return { ok: false, error: "שליחת אימייל לא מוגדרת. הוסף SMTP_HOST, SMTP_USER, SMTP_PASS ל-.env" };
   }
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@crm.local";
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3000";
   try {
     await transporter.sendMail({
       from,

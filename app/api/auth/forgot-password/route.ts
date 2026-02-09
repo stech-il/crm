@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "אם האימייל קיים במערכת, נשלח אליו קישור לאיפוס סיסמה." });
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3000";
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
