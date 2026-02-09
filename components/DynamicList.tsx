@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Download, Filter, ChevronDown, ChevronUp, Bookmark } from "lucide-react";
 import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
 
 type FieldDef = { id: string; name: string; label: string; type: string; showInList?: boolean };
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
 type DynamicRecordItem = { id: string; data: Record<string, unknown>; updatedAt: string };
+type SavedView = { id: string; name: string; filter: string | null; sort: string | null; module: string };
 
 type Props = {
   entitySlug: string;
@@ -19,20 +20,94 @@ export default function DynamicList({ entitySlug }: Props) {
   const [records, setRecords] = useState<DynamicRecordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterField, setFilterField] = useState("");
+  const [filterValue, setFilterValue] = useState("");
+  const [sortField, setSortField] = useState("");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
+  const [showFilter, setShowFilter] = useState(false);
+  const [saveViewName, setSaveViewName] = useState("");
 
-  const fetchData = () => {
-    const params = search ? `?search=${encodeURIComponent(search)}` : "";
-    fetch(`/api/dynamic/${entitySlug}${params}`)
+  const buildParams = useCallback(() => {
+    const p = new URLSearchParams();
+    if (search) p.set("search", search);
+    if (filterField && filterValue) {
+      p.set("filter", JSON.stringify([{ field: filterField, op: "contains", value: filterValue }]));
+    }
+    if (sortField) p.set("sort", JSON.stringify({ field: sortField, dir: sortDir }));
+    return p.toString();
+  }, [search, filterField, filterValue, sortField, sortDir]);
+
+  const fetchData = useCallback(() => {
+    const qs = buildParams();
+    fetch(`/api/dynamic/${entitySlug}${qs ? `?${qs}` : ""}`)
       .then((r) => r.json())
       .then((res) => {
-        setEntity(res.entity);
+        setEntity(res.entity || null);
         setRecords(res.records || []);
         setLoading(false);
       });
+  }, [entitySlug, buildParams]);
+
+  useEffect(() => fetchData(), [fetchData]);
+  usePolling(fetchData, [entitySlug, buildParams]);
+
+  const fetchViews = useCallback(() => {
+    fetch(`/api/saved-views?module=${entitySlug}`)
+      .then((r) => r.json())
+      .then(setSavedViews)
+      .catch(() => setSavedViews([]));
+  }, [entitySlug]);
+
+  useEffect(() => fetchViews(), [fetchViews]);
+
+  const applyView = (v: SavedView) => {
+    if (v.filter) {
+      try {
+        const filters = JSON.parse(v.filter) as { field: string; value: string }[];
+        if (filters[0]) {
+          setFilterField(filters[0].field);
+          setFilterValue(filters[0].value || "");
+        }
+      } catch {}
+    }
+    if (v.sort) {
+      try {
+        const s = JSON.parse(v.sort) as { field: string; dir: "asc" | "desc" };
+        setSortField(s.field || "");
+        setSortDir(s.dir || "desc");
+      } catch {}
+    }
   };
 
-  useEffect(() => fetchData(), [entitySlug, search]);
-  usePolling(fetchData, [entitySlug, search]);
+  const saveView = async () => {
+    if (!saveViewName.trim()) return;
+    await fetch("/api/saved-views", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: saveViewName.trim(),
+        module: entitySlug,
+        filter: filterField && filterValue ? JSON.stringify([{ field: filterField, op: "contains", value: filterValue }]) : null,
+        sort: sortField ? JSON.stringify({ field: sortField, dir: sortDir }) : null,
+      }),
+    });
+    setSaveViewName("");
+    fetchViews();
+  };
+
+  const exportCsv = () => {
+    const qs = buildParams();
+    window.open(`/api/dynamic/${entitySlug}?${qs}&format=csv`, "_blank");
+  };
+
+  const toggleSort = (field: string) => {
+    if (sortField === field) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
 
   if (!entity) {
     if (loading) return <div className="p-8 animate-pulse h-64 bg-slate-200 rounded" />;
@@ -82,8 +157,8 @@ export default function DynamicList({ entitySlug }: Props) {
         </Link>
       </div>
 
-      <div className="mb-4 flex gap-2">
-        <div className="relative flex-1 max-w-xs">
+      <div className="mb-4 flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -93,7 +168,66 @@ export default function DynamicList({ entitySlug }: Props) {
             className="w-full rounded-lg border border-slate-300 py-2 pr-10 pl-3 text-sm"
           />
         </div>
+        <button
+          onClick={() => setShowFilter(!showFilter)}
+          className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm ${showFilter ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+        >
+          <Filter className="h-4 w-4" />
+          סינון
+        </button>
+        {savedViews.length > 0 && (
+          <select
+            onChange={(e) => {
+              const id = e.target.value;
+              const v = savedViews.find((x) => x.id === id);
+              if (v) applyView(v);
+            }}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="">תצוגה שמורה...</option>
+            {savedViews.map((v) => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        )}
+        <div className="flex items-center gap-1">
+          <input
+            type="text"
+            placeholder="שם תצוגה"
+            value={saveViewName}
+            onChange={(e) => setSaveViewName(e.target.value)}
+            className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm w-28"
+          />
+          <button onClick={saveView} className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600 hover:bg-slate-200" title="שמור תצוגה">
+            <Bookmark className="h-4 w-4" />
+          </button>
+        </div>
+        <button onClick={exportCsv} className="flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+          <Download className="h-4 w-4" />
+          ייצוא CSV
+        </button>
       </div>
+      {showFilter && (
+        <div className="mb-4 flex gap-2 items-center rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <select
+            value={filterField}
+            onChange={(e) => setFilterField(e.target.value)}
+            className="rounded border border-slate-300 px-2 py-1.5 text-sm"
+          >
+            <option value="">בחר שדה...</option>
+            {displayFields.map((f) => (
+              <option key={f.id} value={f.name}>{f.label}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            placeholder="ערך..."
+            value={filterValue}
+            onChange={(e) => setFilterValue(e.target.value)}
+            className="rounded border border-slate-300 px-2 py-1.5 text-sm w-40"
+          />
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <table className="w-full">
@@ -101,10 +235,24 @@ export default function DynamicList({ entitySlug }: Props) {
             <tr>
               {displayFields.map((f) => (
                 <th key={f.id} className="px-6 py-4 text-right text-sm font-semibold text-slate-600">
-                  {f.label}
+                  <button
+                    onClick={() => toggleSort(f.name)}
+                    className="flex items-center gap-1 w-full justify-end hover:text-primary-600"
+                  >
+                    {f.label}
+                    {sortField === f.name && (sortDir === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                  </button>
                 </th>
               ))}
-              <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600">עודכן</th>
+              <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600">
+                <button
+                  onClick={() => toggleSort("updatedAt")}
+                  className="flex items-center gap-1 w-full justify-end hover:text-primary-600"
+                >
+                  עודכן
+                  {sortField === "updatedAt" && (sortDir === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">

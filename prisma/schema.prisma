@@ -21,6 +21,8 @@ model User {
   tasks           RecordTask[]
   callLogs        CallLog[]
   backups         Backup[]
+  activities      DynamicActivity[]
+  notes           RecordNote[]
 }
 
 // טוקן לאיפוס סיסמה
@@ -80,6 +82,7 @@ model DynamicRecord {
   files       RecordFile[]
   tasks       RecordTask[]
   callLogs    CallLog[]
+  notes       RecordNote[]
 }
 
 // משימות לרשומה
@@ -125,22 +128,35 @@ model RecordFile {
 
 // פעילות לרשומות
 model DynamicActivity {
-  id          String   @id @default(cuid())
+  id          String         @id @default(cuid())
   recordId    String
-  record      DynamicRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
-  type        String
+  record      DynamicRecord  @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  type        String         // created, updated, task_added, task_done, call_added, note_added
   content     String?
   createdById String?
-  createdAt   DateTime @default(now())
+  createdBy   User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+}
+
+// הערות לרשומות
+model RecordNote {
+  id          String         @id @default(cuid())
+  recordId    String
+  record      DynamicRecord  @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  content     String
+  createdById String?
+  createdBy   User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
 }
 
 // תצוגות שמורות
 model SavedView {
-  id     String  @id @default(cuid())
-  name   String
-  filter String?
-  sort   String?
-  module String
+  id       String  @id @default(cuid())
+  name     String
+  filter   String? // JSON של פילטרים
+  sort     String? // JSON: { field, dir }
+  module   String  // entitySlug
+  userId   String? // תצוגה אישית
 }
 
 // גיבויים - רק אדמין רואה ומשחזר

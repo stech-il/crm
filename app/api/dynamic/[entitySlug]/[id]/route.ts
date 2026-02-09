@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { getSession } from "@/lib/auth";
+import { createActivity } from "@/lib/activity";
 
 export async function GET(
   _request: NextRequest,
@@ -16,11 +18,12 @@ export async function GET(
     const record = await prisma.dynamicRecord.findFirst({
       where: { id, entityId: entity.id },
       include: {
-        activities: true,
+        activities: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
         files: true,
         createdBy: { select: { id: true, name: true } },
         tasks: { orderBy: { order: "asc" } },
         callLogs: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
+        notes: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
       },
     });
     if (!record) return NextResponse.json({ error: "Record not found" }, { status: 404 });
@@ -41,10 +44,13 @@ export async function PATCH(
     if (!entity) return NextResponse.json({ error: "Entity not found" }, { status: 404 });
 
     const body = await request.json();
+    const session = await getSession();
+    const createdById = (session?.user as { id?: string })?.id || null;
     const record = await prisma.dynamicRecord.update({
       where: { id },
       data: { data: body.data, updatedAt: new Date() },
     });
+    await createActivity(record.id, "updated", null, createdById);
     return NextResponse.json(record);
   } catch (error) {
     return NextResponse.json({ error: "Failed to update record" }, { status: 500 });

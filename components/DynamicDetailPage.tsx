@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Pencil, FileDown, Plus, Check, Trash2, Phone } from "lucide-react";
+import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy } from "lucide-react";
 import { formatFieldValue, formatFieldValueForTitle, isFileValue } from "../lib/formatFieldValue";
 import { usePolling } from "../lib/usePolling";
 
@@ -10,6 +10,8 @@ type FieldDef = { id: string; name: string; label: string; type: string; showInC
 type Entity = { id: string; name: string; slug: string; fields: FieldDef[] };
 type Task = { id: string; title: string; done: boolean; order: number };
 type CallLog = { id: string; phoneNumber: string; direction: string; duration?: number; notes?: string; createdAt: string; createdBy?: { name: string } };
+type ActivityItem = { id: string; type: string; content: string | null; createdAt: string; createdBy?: { name: string } | null };
+type Note = { id: string; content: string; createdAt: string; createdBy?: { name: string } | null };
 type DynamicRecordData = {
   id: string;
   data: Record<string, unknown>;
@@ -17,6 +19,18 @@ type DynamicRecordData = {
   createdBy?: { id: string; name: string } | null;
   tasks?: Task[];
   callLogs?: CallLog[];
+  activities?: ActivityItem[];
+  notes?: Note[];
+};
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  created: "נוצרה הרשומה",
+  updated: "עודכנה הרשומה",
+  task_added: "נוספה משימה",
+  task_done: "הושלמה משימה",
+  task_undone: "בוטל סיום משימה",
+  call_added: "נרשמה שיחה",
+  note_added: "נוספה הערה",
 };
 
 export default function DynamicDetailPage({
@@ -33,6 +47,7 @@ export default function DynamicDetailPage({
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
   const [newCallPhone, setNewCallPhone] = useState("");
   const [newCallNotes, setNewCallNotes] = useState("");
+  const [newNoteContent, setNewNoteContent] = useState("");
 
   const fetchData = useCallback(() => {
     fetch(`/api/dynamic/${entitySlug}/${recordId}`)
@@ -115,6 +130,27 @@ export default function DynamicDetailPage({
     fetchData();
   };
 
+  const addNote = async () => {
+    if (!newNoteContent.trim()) return;
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newNoteContent.trim() }),
+    });
+    setNewNoteContent("");
+    fetchData();
+  };
+
+  const duplicateRecord = async () => {
+    const res = await fetch(`/api/dynamic/${entitySlug}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: record?.data }),
+    });
+    const newRecord = await res.json();
+    if (newRecord?.id) window.location.href = `/dynamic/${entitySlug}/${newRecord.id}`;
+  };
+
   if (!entity || !record) {
     return (
       <div className="p-8">
@@ -126,6 +162,8 @@ export default function DynamicDetailPage({
   const data = record.data as Record<string, unknown>;
   const tasks = record.tasks || [];
   const callLogs = record.callLogs || [];
+  const activities = record.activities || [];
+  const notes = record.notes || [];
 
   return (
     <div className="p-8">
@@ -141,13 +179,22 @@ export default function DynamicDetailPage({
             <p className="mt-1 text-sm text-slate-500">נוצר ע״י {record.createdBy.name}</p>
           )}
         </div>
-        <Link
-          href={`/dynamic/${entitySlug}/${recordId}/edit`}
-          className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
-        >
-          <Pencil className="h-4 w-4" />
-          עריכה
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={duplicateRecord}
+            className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            <Copy className="h-4 w-4" />
+            שכפל
+          </button>
+          <Link
+            href={`/dynamic/${entitySlug}/${recordId}/edit`}
+            className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            <Pencil className="h-4 w-4" />
+            עריכה
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm mb-6">
@@ -160,19 +207,26 @@ export default function DynamicDetailPage({
                   ? data[f.name]
                     ? "כן"
                     : "לא"
-                  : isFileValue(data[f.name])
+                  : f.type === "phone" && typeof data[f.name] === "string"
                     ? (
-                        <a
-                          href={(data[f.name] as { url: string }).url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-primary-600 hover:underline"
-                        >
-                          <FileDown className="h-4 w-4" />
-                          {(data[f.name] as { filename?: string }).filename || "הורד קובץ"}
+                        <a href={`tel:${String(data[f.name]).replace(/\D/g, "")}`} className="inline-flex items-center gap-1.5 text-primary-600 hover:underline">
+                          <Phone className="h-4 w-4" />
+                          {formatFieldValue(data[f.name], f.type)}
                         </a>
                       )
-                    : formatFieldValue(data[f.name], f.type)}
+                    : isFileValue(data[f.name])
+                      ? (
+                          <a
+                            href={(data[f.name] as { url: string }).url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-primary-600 hover:underline"
+                          >
+                            <FileDown className="h-4 w-4" />
+                            {(data[f.name] as { filename?: string }).filename || "הורד קובץ"}
+                          </a>
+                        )
+                      : formatFieldValue(data[f.name], f.type)}
               </dd>
             </div>
           ))}
@@ -274,7 +328,9 @@ export default function DynamicDetailPage({
         <ul className="space-y-2">
           {callLogs.map((c) => (
             <li key={c.id} className="flex items-center gap-3 rounded-lg bg-slate-50 p-3 text-sm">
-              <Phone className="h-4 w-4 text-slate-400" />
+              <a href={`tel:${c.phoneNumber.replace(/\D/g, "")}`} className="flex items-center gap-2 text-primary-600 hover:text-primary-700" title="התקשר">
+                <Phone className="h-4 w-4" />
+              </a>
               <div className="flex-1">
                 <span className="font-medium">{c.phoneNumber}</span>
                 <span className="mr-2 text-slate-500">({c.direction === "incoming" ? "נכנסת" : "יוצאת"})</span>
@@ -288,6 +344,63 @@ export default function DynamicDetailPage({
             </li>
           ))}
           {callLogs.length === 0 && <p className="text-sm text-slate-500">אין רישום שיחות. מוכן לחיבור למערכת טלפונית (API).</p>}
+        </ul>
+      </div>
+
+      {/* הערות */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm mb-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-800">הערות</h2>
+        <div className="mb-4 flex gap-2">
+          <textarea
+            value={newNoteContent}
+            onChange={(e) => setNewNoteContent(e.target.value)}
+            placeholder="הוסף הערה..."
+            rows={2}
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm resize-none"
+          />
+          <button
+            onClick={addNote}
+            className="self-end flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            <MessageSquare className="h-4 w-4" />
+            הוסף
+          </button>
+        </div>
+        <ul className="space-y-2">
+          {notes.map((n) => (
+            <li key={n.id} className="rounded-lg bg-slate-50 p-3 text-sm">
+              <p className="text-slate-800 whitespace-pre-wrap">{n.content}</p>
+              <span className="text-slate-400 text-xs mt-1 block">
+                {new Date(n.createdAt).toLocaleString("he-IL")}
+                {n.createdBy?.name && ` · ${n.createdBy.name}`}
+              </span>
+            </li>
+          ))}
+          {notes.length === 0 && <p className="text-sm text-slate-500">אין הערות</p>}
+        </ul>
+      </div>
+
+      {/* ציר זמן פעילות */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-slate-800 flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          פעילות
+        </h2>
+        <ul className="space-y-3">
+          {activities.map((a) => (
+            <li key={a.id} className="flex items-start gap-3 text-sm">
+              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary-500" />
+              <div>
+                <span className="font-medium text-slate-700">{ACTIVITY_LABELS[a.type] || a.type}</span>
+                {a.content && <span className="text-slate-600 mr-1"> – {a.content}</span>}
+                <span className="text-slate-400 text-xs">
+                  {new Date(a.createdAt).toLocaleString("he-IL")}
+                  {a.createdBy?.name && ` · ${a.createdBy.name}`}
+                </span>
+              </div>
+            </li>
+          ))}
+          {activities.length === 0 && <p className="text-sm text-slate-500">אין פעילות</p>}
         </ul>
       </div>
     </div>

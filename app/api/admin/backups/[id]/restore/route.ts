@@ -27,13 +27,14 @@ export async function POST(
     const backup = await prisma.backup.findUnique({ where: { id } });
     if (!backup) return NextResponse.json({ error: "גיבוי לא נמצא" }, { status: 404 });
 
-    const b = backup.data as { version?: number; data?: { users?: unknown[]; entities?: unknown[]; fieldDefinitions?: unknown[]; records?: unknown[]; tasks?: unknown[]; callLogs?: unknown[] } };
+    const b = backup.data as { version?: number; data?: { users?: unknown[]; entities?: unknown[]; fieldDefinitions?: unknown[]; records?: unknown[]; tasks?: unknown[]; callLogs?: unknown[]; notes?: unknown[] } };
     const data = b?.data;
     if (!data) return NextResponse.json({ error: "פורמט גיבוי לא תקין" }, { status: 400 });
 
     await prisma.$transaction(async (tx) => {
       await tx.callLog.deleteMany();
       await tx.recordTask.deleteMany();
+      await tx.recordNote.deleteMany();
       await tx.dynamicRecord.deleteMany();
       await tx.fieldDefinition.deleteMany();
       await tx.entity.deleteMany();
@@ -102,6 +103,15 @@ export async function POST(
             duration: c.duration,
             notes: c.notes,
           },
+        });
+      }
+
+      const notes = (data.notes || []) as { recordId: string; content: string; createdById?: string }[];
+      for (const n of notes) {
+        const newRecordId = recordIdMap[n.recordId];
+        if (!newRecordId) continue;
+        await tx.recordNote.create({
+          data: { recordId: newRecordId, content: n.content, createdById: n.createdById },
         });
       }
     });

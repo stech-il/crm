@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/db";
+import { getSession } from "@/lib/auth";
+import { createActivity } from "@/lib/activity";
 
 async function verifyTask(recordId: string, taskId: string) {
   const task = await prisma.recordTask.findFirst({
@@ -15,6 +17,8 @@ export async function PATCH(
   const { id, taskId } = await params;
   try {
     if (!(await verifyTask(id, taskId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const session = await getSession();
+    const createdById = (session?.user as { id?: string })?.id || null;
     const body = await req.json();
     const data: { done?: boolean; title?: string } = {};
     if (typeof body.done === "boolean") data.done = body.done;
@@ -23,6 +27,9 @@ export async function PATCH(
       where: { id: taskId },
       data,
     });
+    if (typeof body.done === "boolean") {
+      await createActivity(id, body.done ? "task_done" : "task_undone", task.title, createdById);
+    }
     return NextResponse.json(task);
   } catch {
     return NextResponse.json({ error: "Failed" }, { status: 500 });

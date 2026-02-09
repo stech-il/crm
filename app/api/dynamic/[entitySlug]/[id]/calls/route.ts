@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/db";
 import { getSession } from "@/lib/auth";
+import { createActivity } from "@/lib/activity";
 
 export async function GET(
   _req: NextRequest,
@@ -39,6 +40,7 @@ export async function POST(
     if (!phoneNumber || typeof phoneNumber !== "string") {
       return NextResponse.json({ error: "נא להזין מספר טלפון" }, { status: 400 });
     }
+    const createdById = (session?.user as { id?: string })?.id || null;
     const call = await prisma.callLog.create({
       data: {
         recordId: id,
@@ -46,9 +48,10 @@ export async function POST(
         direction: direction || "outgoing",
         duration: typeof duration === "number" ? duration : null,
         notes: typeof notes === "string" ? notes : null,
-        createdById: (session?.user as { id?: string })?.id || null,
+        createdById,
       },
     });
+    await createActivity(id, "call_added", `${phoneNumber.trim()} (${direction || "outgoing"})`, createdById);
     return NextResponse.json(call);
   } catch {
     return NextResponse.json({ error: "Failed" }, { status: 500 });

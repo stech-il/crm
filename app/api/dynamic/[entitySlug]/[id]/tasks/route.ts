@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/db";
 import { getSession } from "@/lib/auth";
+import { createActivity } from "@/lib/activity";
 
 export async function GET(
   _req: NextRequest,
@@ -40,14 +41,16 @@ export async function POST(
     const maxOrder = await prisma.recordTask
       .aggregate({ where: { recordId: id }, _max: { order: true } })
       .then((r) => r._max.order ?? -1);
+    const createdById = (session?.user as { id?: string })?.id || null;
     const task = await prisma.recordTask.create({
       data: {
         recordId: id,
         title: title.trim(),
         order: maxOrder + 1,
-        createdById: (session?.user as { id?: string })?.id || null,
+        createdById,
       },
     });
+    await createActivity(id, "task_added", task.title, createdById);
     return NextResponse.json(task);
   } catch {
     return NextResponse.json({ error: "Failed" }, { status: 500 });
