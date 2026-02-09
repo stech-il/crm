@@ -17,7 +17,7 @@ export default function WebhooksAdmin() {
   const [form, setForm] = useState({ name: "", url: "", secret: "", events: EVENTS as string[], entitySlug: "" });
 
   const fetchList = () => fetch("/api/admin/webhooks").then((r) => r.json()).then(setList).finally(() => setLoading(false));
-  useEffect(() => fetchList(), []);
+  useEffect(() => { fetchList(); }, []);
 
   const openModal = (item?: WebhookItem) => {
     if (item) {

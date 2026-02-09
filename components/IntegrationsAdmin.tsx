@@ -36,7 +36,7 @@ export default function IntegrationsAdmin() {
   const [form, setForm] = useState({ type: "twilio", name: "", credentials: {} as Record<string, string>, config: {} as Record<string, string> });
 
   const fetchList = () => fetch("/api/admin/integrations").then((r) => r.json()).then(setList).finally(() => setLoading(false));
-  useEffect(() => fetchList(), []);
+  useEffect(() => { fetchList(); }, []);
 
   const openModal = (item?: Integration) => {
     if (item) {

@@ -15,7 +15,7 @@ export default function ApiKeysAdmin() {
   const [form, setForm] = useState({ name: "", permissions: ["records:read", "records:write"] });
 
   const fetchList = () => fetch("/api/admin/api-keys").then((r) => r.json()).then(setList).finally(() => setLoading(false));
-  useEffect(() => fetchList(), []);
+  useEffect(() => { fetchList(); }, []);
 
   const create = async () => {
     if (!form.name.trim()) return;
