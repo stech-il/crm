@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Download, Upload, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List, Archive, FileText, Trash2 } from "lucide-react";
+import { Plus, Search, Download, Upload, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List, Archive, FileText, Trash2, Pencil, Calendar } from "lucide-react";
 import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
+import Modal from "./Modal";
 import { usePolling } from "../lib/usePolling";
 
 type FieldDef = { id: string; name: string; label: string; type: string; showInList?: boolean; options?: string | null };
@@ -28,8 +29,11 @@ export default function DynamicList({ entitySlug }: Props) {
   const [allTags, setAllTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const [saveViewName, setSaveViewName] = useState("");
-  const [viewMode, setViewMode] = useState<"table" | "pipeline">("table");
+  const [viewMode, setViewMode] = useState<"table" | "pipeline" | "calendar">("table");
   const [pipelineField, setPipelineField] = useState("");
+  const [calendarField, setCalendarField] = useState("");
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
   const [showArchived, setShowArchived] = useState(false);
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -41,6 +45,10 @@ export default function DynamicList({ entitySlug }: Props) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; total: number; errors: number } | null>(null);
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [bulkEditField, setBulkEditField] = useState("");
+  const [bulkEditValue, setBulkEditValue] = useState("");
+  const [bulkEditing, setBulkEditing] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const buildParams = useCallback(() => {
@@ -53,9 +61,9 @@ export default function DynamicList({ entitySlug }: Props) {
     if (showArchived) p.set("archived", "1");
     if (filterTags.length > 0) p.set("tags", filterTags.join(","));
     p.set("page", String(page));
-    p.set("limit", "25");
+    p.set("limit", viewMode === "calendar" ? "500" : "25");
     return p.toString();
-  }, [search, filterField, filterValue, sortField, sortDir, showArchived, filterTags, page]);
+  }, [search, filterField, filterValue, sortField, sortDir, showArchived, filterTags, page, viewMode]);
 
   const fetchData = useCallback(() => {
     const qs = buildParams();
@@ -232,6 +240,32 @@ export default function DynamicList({ entitySlug }: Props) {
     fetchData();
   };
 
+  const bulkUpdate = async () => {
+    if (!bulkEditField) return;
+    setBulkEditing(true);
+    const field = entity?.fields.find((f) => f.name === bulkEditField);
+    let value: unknown = bulkEditValue;
+    if (field?.type === "number") value = parseFloat(bulkEditValue) || 0;
+    else if (field?.type === "checkbox") value = bulkEditValue === "true";
+    try {
+      const res = await fetch(`/api/dynamic/${entitySlug}/bulk-update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds), field: bulkEditField, value }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSelectedIds(new Set());
+        setShowBulkEdit(false);
+        setBulkEditField("");
+        setBulkEditValue("");
+        fetchData();
+      } else alert(data.error || "שגיאה");
+    } finally {
+      setBulkEditing(false);
+    }
+  };
+
   if (!entity) {
     if (loading) return <div className="p-8 animate-pulse h-64 bg-slate-200 rounded" />;
     return (
@@ -265,6 +299,7 @@ export default function DynamicList({ entitySlug }: Props) {
 
   const displayFields = (entity.fields || []).filter((f) => f.showInList !== false);
   const pipelineFields = (entity.fields || []).filter((f) => f.type === "select" || f.type === "multiselect");
+  const dateFields = (entity.fields || []).filter((f) => f.type === "date" || f.type === "datetime" || f.type === "date-hebrew");
 
   const getPipelineColumns = () => {
     if (!pipelineField) return [""];
@@ -405,10 +440,16 @@ export default function DynamicList({ entitySlug }: Props) {
           </button>
         </div>
         {!showArchived && selectedIds.size > 0 && (
-          <button onClick={bulkArchive} className="flex items-center gap-1 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">
-            <Archive className="h-4 w-4" />
-            ארכב ({selectedIds.size})
-          </button>
+          <>
+            <button onClick={() => setShowBulkEdit(true)} className="flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+              <Pencil className="h-4 w-4" />
+              עדכון מרובה ({selectedIds.size})
+            </button>
+            <button onClick={bulkArchive} className="flex items-center gap-1 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">
+              <Archive className="h-4 w-4" />
+              ארכב ({selectedIds.size})
+            </button>
+          </>
         )}
         <input
           ref={fileInputRef}
@@ -429,37 +470,27 @@ export default function DynamicList({ entitySlug }: Props) {
           <Download className="h-4 w-4" />
           ייצוא CSV
         </button>
-        {pipelineFields.length > 0 && (
+        {(pipelineFields.length > 0 || dateFields.length > 0) && (
           <>
             <div className="flex rounded-lg border border-slate-200 overflow-hidden">
-              <button
-                onClick={() => setViewMode("table")}
-                className={`px-3 py-2 text-sm ${viewMode === "table" ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600"}`}
-                title="טבלה"
-              >
-                <List className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode("pipeline");
-                  if (!pipelineField && pipelineFields[0]) setPipelineField(pipelineFields[0].name);
-                }}
-                className={`px-3 py-2 text-sm ${viewMode === "pipeline" ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600"}`}
-                title="פאנלים"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
+              <button onClick={() => setViewMode("table")} className={`px-3 py-2 text-sm ${viewMode === "table" ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600"}`} title="טבלה"><List className="h-4 w-4" /></button>
+              {pipelineFields.length > 0 && (
+                <button onClick={() => { setViewMode("pipeline"); if (!pipelineField && pipelineFields[0]) setPipelineField(pipelineFields[0].name); }} className={`px-3 py-2 text-sm ${viewMode === "pipeline" ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600"}`} title="פאנלים"><LayoutGrid className="h-4 w-4" /></button>
+              )}
+              {dateFields.length > 0 && (
+                <button onClick={() => { setViewMode("calendar"); if (!calendarField && dateFields[0]) setCalendarField(dateFields[0].name); }} className={`px-3 py-2 text-sm ${viewMode === "calendar" ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600"}`} title="לוח שנה"><Calendar className="h-4 w-4" /></button>
+              )}
             </div>
             {viewMode === "pipeline" && (
-              <select
-                value={pipelineField}
-                onChange={(e) => setPipelineField(e.target.value)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              >
+              <select value={pipelineField} onChange={(e) => setPipelineField(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">בחר שדה למיון...</option>
-                {pipelineFields.map((f) => (
-                  <option key={f.id} value={f.name}>{f.label}</option>
-                ))}
+                {pipelineFields.map((f) => (<option key={f.id} value={f.name}>{f.label}</option>))}
+              </select>
+            )}
+            {viewMode === "calendar" && (
+              <select value={calendarField} onChange={(e) => setCalendarField(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">בחר שדה תאריך...</option>
+                {dateFields.map((f) => (<option key={f.id} value={f.name}>{f.label}</option>))}
               </select>
             )}
           </>
@@ -567,6 +598,57 @@ export default function DynamicList({ entitySlug }: Props) {
               </div>
             </div>
           ))}
+        </div>
+      ) : viewMode === "calendar" && calendarField ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => { if (calendarMonth <= 0) { setCalendarMonth(11); setCalendarYear((y) => y - 1); } else setCalendarMonth((m) => m - 1); }} className="rounded-lg border border-slate-300 px-3 py-1 text-sm">←</button>
+            <h3 className="font-semibold text-slate-800">
+              {new Date(calendarYear, calendarMonth).toLocaleDateString("he-IL", { month: "long", year: "numeric" })}
+            </h3>
+            <button onClick={() => { if (calendarMonth >= 11) { setCalendarMonth(0); setCalendarYear((y) => y + 1); } else setCalendarMonth((m) => m + 1); }} className="rounded-lg border border-slate-300 px-3 py-1 text-sm">→</button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-sm">
+            {["א", "ב", "ג", "ד", "ה", "ו", "ש"].map((d) => (
+              <div key={d} className="text-center font-medium text-slate-500 py-1">{d}</div>
+            ))}
+            {(() => {
+              const first = new Date(calendarYear, calendarMonth, 1);
+              const last = new Date(calendarYear, calendarMonth + 1, 0);
+              const start = (first.getDay() + 6) % 7;
+              const days: (number | null)[] = [...Array(start).fill(null), ...Array.from({ length: last.getDate() }, (_, i) => i + 1)];
+              const recordsByDay: Record<string, DynamicRecordItem[]> = {};
+              records.forEach((r) => {
+                const val = (r.data as Record<string, unknown>)[calendarField];
+                if (!val) return;
+                const d = new Date(String(val));
+                if (isNaN(d.getTime())) return;
+                if (d.getMonth() !== calendarMonth || d.getFullYear() !== calendarYear) return;
+                const key = `${d.getDate()}`;
+                if (!recordsByDay[key]) recordsByDay[key] = [];
+                recordsByDay[key].push(r);
+              });
+              return days.map((day, i) => (
+                <div key={i} className="min-h-[80px] rounded-lg border border-slate-100 p-1 bg-slate-50/50">
+                  {day && (
+                    <>
+                      <span className="text-slate-600 font-medium">{day}</span>
+                      <div className="mt-1 space-y-0.5">
+                        {(recordsByDay[String(day)] || []).slice(0, 3).map((r) => (
+                          <Link key={r.id} href={`/dynamic/${entitySlug}/${r.id}`} className="block truncate text-xs text-primary-600 hover:underline bg-primary-50 rounded px-1 py-0.5">
+                            {formatFieldValue((r.data as Record<string, unknown>)[displayFields[0]?.name], displayFields[0]?.type) || r.id.slice(0, 6)}
+                          </Link>
+                        ))}
+                        {(recordsByDay[String(day)]?.length || 0) > 3 && (
+                          <span className="text-xs text-slate-500">+{(recordsByDay[String(day)]?.length || 0) - 3}</span>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ));
+            })()}
+          </div>
         </div>
       ) : (
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -723,6 +805,55 @@ export default function DynamicList({ entitySlug }: Props) {
           </button>
         </div>
       )}
+
+      <Modal isOpen={showBulkEdit} onClose={() => setShowBulkEdit(false)} title="עדכון מרובה">
+        <div className="space-y-4">
+          <p className="text-slate-600 text-sm">עדכן שדה ל־{selectedIds.size} רשומות נבחרות</p>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">שדה</label>
+            <select value={bulkEditField} onChange={(e) => setBulkEditField(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2">
+              <option value="">בחר שדה...</option>
+              {displayFields.map((f) => (
+                <option key={f.id} value={f.name}>{f.label}</option>
+              ))}
+            </select>
+          </div>
+          {bulkEditField && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">ערך</label>
+              {(entity.fields.find((f) => f.name === bulkEditField)?.type === "select" || entity.fields.find((f) => f.name === bulkEditField)?.type === "checkbox") ? (
+                entity.fields.find((f) => f.name === bulkEditField)?.type === "checkbox" ? (
+                  <select value={bulkEditValue} onChange={(e) => setBulkEditValue(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2">
+                    <option value="">—</option>
+                    <option value="true">כן</option>
+                    <option value="false">לא</option>
+                  </select>
+                ) : (
+                  <select value={bulkEditValue} onChange={(e) => setBulkEditValue(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2">
+                    <option value="">—</option>
+                    {getSelectOptions(entity.fields.find((f) => f.name === bulkEditField) || {} as FieldDef).map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                )
+              ) : (
+                <input
+                  type={entity.fields.find((f) => f.name === bulkEditField)?.type === "number" ? "number" : "text"}
+                  value={bulkEditValue}
+                  onChange={(e) => setBulkEditValue(e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                />
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-4">
+            <button onClick={() => setShowBulkEdit(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600">ביטול</button>
+            <button onClick={bulkUpdate} disabled={!bulkEditField || bulkEditing} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+              {bulkEditing ? "מעדכן..." : "עדכן"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

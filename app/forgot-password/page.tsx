@@ -53,7 +53,16 @@ export default function ForgotPasswordPage() {
               placeholder="your@email.com"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+              <p>{error}</p>
+              {error.includes("לא מוגדרת") && (
+                <p className="mt-2 text-xs">
+                  הגדר SMTP (Gmail, Outlook) או SendGrid ב־ניהול → אינטגרציות. או הוסף ל-Render: SMTP_HOST, SMTP_USER, SMTP_PASS.
+                </p>
+              )}
+            </div>
+          )}
           {message && <p className="text-sm text-emerald-600">{message}</p>}
           <button
             type="submit"
