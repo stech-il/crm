@@ -13,7 +13,8 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "backup": "npx tsx scripts/daily-backup.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
