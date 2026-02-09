@@ -105,7 +105,7 @@ export default function Header() {
             <span className="text-xs text-slate-500">{session?.user?.email}</span>
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => signOut({ callbackUrl: typeof window !== "undefined" ? `${window.location.origin}/login` : "/login" })}
             className="mr-2 text-sm text-slate-500 hover:text-slate-700"
           >
             התנתק

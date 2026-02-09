@@ -19,7 +19,7 @@ export default function InactivityTimeout({ children, timeoutMinutes = 5 }: Prop
       clearTimeout(timeoutRef.current);
     }
     timeoutRef.current = setTimeout(() => {
-      signOut({ callbackUrl: "/login" });
+      signOut({ callbackUrl: typeof window !== "undefined" ? `${window.location.origin}/login` : "/login" });
     }, timeoutMs);
   }, [timeoutMs]);
 
