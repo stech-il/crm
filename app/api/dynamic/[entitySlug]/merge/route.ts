@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/app/lib/db";
 import { getSession } from "@/lib/auth";
 import { createActivity } from "@/lib/activity";
@@ -39,7 +40,7 @@ export async function POST(
     }
     await prisma.dynamicRecord.update({
       where: { id: targetId },
-      data: { data: merged, updatedAt: new Date() },
+      data: { data: merged as Prisma.InputJsonValue, updatedAt: new Date() },
     });
 
     await prisma.recordTask.updateMany({ where: { recordId: sourceId }, data: { recordId: targetId } });

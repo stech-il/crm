@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Download, Upload, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List, Archive, FileText, Trash2, Pencil, Calendar } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Plus, Search, Download, Upload, Filter, ChevronDown, ChevronUp, Bookmark, LayoutGrid, List, Archive, FileText, Trash2, Pencil, Calendar, User } from "lucide-react";
 import { formatFieldValue, isFileValue } from "../lib/formatFieldValue";
 import Modal from "./Modal";
 import { usePolling } from "../lib/usePolling";
@@ -49,7 +50,10 @@ export default function DynamicList({ entitySlug }: Props) {
   const [bulkEditField, setBulkEditField] = useState("");
   const [bulkEditValue, setBulkEditValue] = useState("");
   const [bulkEditing, setBulkEditing] = useState(false);
+  const [scope, setScope] = useState<"mine" | "all">("mine");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as { role?: string })?.role === "admin";
 
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
@@ -60,10 +64,11 @@ export default function DynamicList({ entitySlug }: Props) {
     if (sortField) p.set("sort", JSON.stringify({ field: sortField, dir: sortDir }));
     if (showArchived) p.set("archived", "1");
     if (filterTags.length > 0) p.set("tags", filterTags.join(","));
+    if (!isAdmin && scope === "all") p.set("scope", "all");
     p.set("page", String(page));
     p.set("limit", viewMode === "calendar" ? "500" : "25");
     return p.toString();
-  }, [search, filterField, filterValue, sortField, sortDir, showArchived, filterTags, page, viewMode]);
+  }, [search, filterField, filterValue, sortField, sortDir, showArchived, filterTags, scope, isAdmin, page, viewMode]);
 
   const fetchData = useCallback(() => {
     const qs = buildParams();
@@ -80,7 +85,7 @@ export default function DynamicList({ entitySlug }: Props) {
 
   useEffect(() => fetchData(), [fetchData]);
   usePolling(fetchData, [entitySlug, buildParams]);
-  useEffect(() => setPage(1), [search, filterField, filterValue, showArchived, filterTags]);
+  useEffect(() => setPage(1), [search, filterField, filterValue, showArchived, filterTags, scope]);
 
   const fetchViews = useCallback(() => {
     fetch(`/api/saved-views?module=${entitySlug}`)
@@ -397,6 +402,17 @@ export default function DynamicList({ entitySlug }: Props) {
             className="w-full rounded-lg border border-slate-300 py-2 pr-10 pl-3 text-sm"
           />
         </div>
+        {!isAdmin && (
+          <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+            <button onClick={() => setScope("mine")} className={`flex items-center gap-1 px-3 py-2 text-sm ${scope === "mine" ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600"}`} title="הרשומות שלי">
+              <User className="h-4 w-4" />
+              שלי
+            </button>
+            <button onClick={() => setScope("all")} className={`px-3 py-2 text-sm ${scope === "all" ? "bg-primary-100 text-primary-700" : "bg-slate-100 text-slate-600"}`} title="כל הרשומות">
+              הכל
+            </button>
+          </div>
+        )}
         <button
           onClick={() => setShowArchived(!showArchived)}
           className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm ${showArchived ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}

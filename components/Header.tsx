@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Settings, Search, Keyboard, Bell, Sun, Moon } from "lucide-react";
+import { User, Settings, Search, Keyboard, Bell, Sun, Moon, Shield } from "lucide-react";
 import { usePolling } from "../lib/usePolling";
 
 type SearchResult = { id: string; entitySlug: string; entityName: string; title: string; updatedAt: string };
@@ -165,9 +165,16 @@ export default function Header() {
           <Keyboard className="h-5 w-5" />
         </button>
         <Link
+          href="/settings"
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:text-slate-400"
+          title="הגדרות חשבון (2FA)"
+        >
+          <Shield className="h-5 w-5" />
+        </Link>
+        <Link
           href="/admin"
-          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-          title="הגדרות"
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:text-slate-400"
+          title="ניהול מערכת"
         >
           <Settings className="h-5 w-5" />
         </Link>

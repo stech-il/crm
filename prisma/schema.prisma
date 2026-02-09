@@ -288,3 +288,17 @@ model ApiKey {
   createdAt   DateTime @default(now())
   @@unique([keyPrefix])
 }
+
+// אוטומציות – כללים (כששדה X משתנה ל-Y – צור משימה / webhook)
+model WorkflowRule {
+  id           String   @id @default(cuid())
+  name         String
+  entitySlug   String
+  trigger      String   // record.created, record.updated
+  condition    String?  // JSON: { field, op, value } או null = תמיד
+  action       String   // create_task, call_webhook
+  actionConfig String?  // JSON: { taskTitle?, webhookUrl? }
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

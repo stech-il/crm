@@ -5,6 +5,7 @@ import { createActivity } from "@/lib/activity";
 import { triggerWebhooks } from "@/lib/webhooks";
 import { logAudit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
+import { runWorkflowRules } from "@/lib/workflow";
 
 export async function GET(
   _request: NextRequest,
@@ -78,6 +79,7 @@ export async function PATCH(
     }
     await createActivity(record.id, "updated", null, createdById);
     await triggerWebhooks("record.updated", entitySlug, record.id, record.data as Record<string, unknown>, previousData);
+    await runWorkflowRules(entitySlug, "record.updated", record.id, record.data as Record<string, unknown>);
     if (body.isArchived === true) await triggerWebhooks("record.archived", entitySlug, record.id, record.data as Record<string, unknown>);
     await logAudit({
       userId: createdById ?? undefined,

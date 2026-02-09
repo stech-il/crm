@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/db";
+import { getSession } from "@/lib/auth";
 import { createActivity } from "@/lib/activity";
 import { triggerWebhooks } from "@/lib/webhooks";
 import { logAudit } from "@/lib/audit";
+import { runWorkflowRules } from "@/lib/workflow";
 
 export async function GET(
   request: NextRequest,
@@ -16,25 +18,35 @@ export async function GET(
     });
     if (!entity) return NextResponse.json({ error: "Entity not found" }, { status: 404 });
 
+    const session = await getSession();
+    const userId = (session?.user as { id?: string })?.id;
+    const isAdmin = (session?.user as { role?: string })?.role === "admin";
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const filterJson = searchParams.get("filter");
     const sortJson = searchParams.get("sort");
     const format = searchParams.get("format");
     const includeArchived = searchParams.get("archived") === "1";
-    const tagIds = searchParams.get("tags"); // comma-separated tag IDs
+    const scope = searchParams.get("scope"); // "mine" | "all" – רק למשתמשים שאינם אדמין
+    const tagIds = searchParams.get("tags");
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(100, Math.max(10, parseInt(searchParams.get("limit") || "25", 10)));
 
-    const where: { entityId: string; isArchived?: boolean } = { entityId: entity.id };
+    const where: Record<string, unknown> = { entityId: entity.id };
     if (!includeArchived) where.isArchived = false;
+    if (!isAdmin && userId) {
+      if (scope !== "all") {
+        where.OR = [{ assignedToId: userId }, { createdById: userId }];
+      }
+    }
 
     const whereClause = tagIds
       ? { ...where, tags: { some: { tagId: { in: tagIds.split(",").filter(Boolean) } } } }
       : where;
 
     let records = await prisma.dynamicRecord.findMany({
-      where: whereClause,
+      where: whereClause as { entityId: string; isArchived?: boolean; OR?: { assignedToId: string | null; createdById: string | null }[]; tags?: unknown },
       orderBy: { updatedAt: "desc" },
     });
 
@@ -178,6 +190,7 @@ export async function POST(
     });
     await createActivity(record.id, "created", null, createdById);
     await triggerWebhooks("record.created", entitySlug, record.id, record.data as Record<string, unknown>);
+    await runWorkflowRules(entitySlug, "record.created", record.id, record.data as Record<string, unknown>);
     await logAudit({
       userId: createdById ?? undefined,
       action: "record.create",
