@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy, Archive, ArchiveRestore, Printer, Link2, FileText } from "lucide-react";
+import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy, Archive, ArchiveRestore, Printer, Link2, FileText, GitMerge } from "lucide-react";
 import Modal from "./Modal";
 import { formatFieldValue, formatFieldValueForTitle, isFileValue } from "../lib/formatFieldValue";
 import { addRecentlyViewed } from "../lib/recentlyViewed";
@@ -64,6 +64,10 @@ export default function DynamicDetailPage({
   const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState("");
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeTargetId, setMergeTargetId] = useState("");
+  const [mergeRecords, setMergeRecords] = useState<{ id: string; data: Record<string, unknown> }[]>([]);
+  const [merging, setMerging] = useState(false);
   const router = useRouter();
 
   const fetchData = useCallback(() => {
@@ -81,6 +85,34 @@ export default function DynamicDetailPage({
     fetch("/api/tags").then((r) => r.json()).then((t) => setAllTags(Array.isArray(t) ? t : [])).catch(() => setAllTags([]));
     fetch("/api/users").then((r) => r.json()).then((u) => setUsers(Array.isArray(u) ? u : [])).catch(() => setUsers([]));
   }, []);
+
+  useEffect(() => {
+    if (showMergeModal && entitySlug) {
+      fetch(`/api/dynamic/${entitySlug}?limit=100`)
+        .then((r) => r.json())
+        .then((res) => setMergeRecords((res.records || []).filter((r: { id: string }) => r.id !== recordId)));
+    }
+  }, [showMergeModal, entitySlug, recordId]);
+
+  const doMerge = async () => {
+    if (!mergeTargetId) return;
+    setMerging(true);
+    try {
+      const res = await fetch(`/api/dynamic/${entitySlug}/merge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceId: recordId, targetId: mergeTargetId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShowMergeModal(false);
+        setMergeTargetId("");
+        router.push(`/dynamic/${entitySlug}/${data.targetId}`);
+      } else alert(data.error || "שגיאה במיזוג");
+    } finally {
+      setMerging(false);
+    }
+  };
 
   useEffect(() => {
     if (entity && record) {
@@ -325,6 +357,14 @@ export default function DynamicDetailPage({
               שחזר מארכיון
             </button>
           )}
+          <button
+            onClick={() => setShowMergeModal(true)}
+            className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            title="מיזוג עם רשומה אחרת"
+          >
+            <GitMerge className="h-4 w-4" />
+            מיזוג
+          </button>
           <button
             onClick={duplicateRecord}
             className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
@@ -639,6 +679,30 @@ export default function DynamicDetailPage({
           </button>
           <button onClick={deletePermanent} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
             מחק לצמיתות
+          </button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showMergeModal} onClose={() => { setShowMergeModal(false); setMergeTargetId(""); }} title="מיזוג רשומות">
+        <p className="text-slate-600 mb-4">בחר את רשומת היעד שאליה למזג את הרשומה הנוכחית. הנתונים יאוחדו ורשומה זו תימחק.</p>
+        <select
+          value={mergeTargetId}
+          onChange={(e) => setMergeTargetId(e.target.value)}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 mb-4"
+        >
+          <option value="">בחר רשומה...</option>
+          {mergeRecords.map((r) => (
+            <option key={r.id} value={r.id}>
+              {formatFieldValueForTitle(r.data[entity.fields[0]?.name]) || r.id.slice(0, 8)}
+            </option>
+          ))}
+        </select>
+        <div className="flex gap-2 justify-end">
+          <button onClick={() => { setShowMergeModal(false); setMergeTargetId(""); }} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            ביטול
+          </button>
+          <button onClick={doMerge} disabled={!mergeTargetId || merging} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+            {merging ? "ממזג..." : "מיזוג"}
           </button>
         </div>
       </Modal>

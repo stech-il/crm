@@ -14,7 +14,8 @@ model User {
   email           String?          @unique
   password        String?          // bcrypt hash
   role            String           @default("user") // admin, user
-  status          String           @default("approved") // pending, approved - הרשמה מחייבת אישור
+  status          String           @default("approved") // pending, approved
+  totpSecret      String?          // 2FA - TOTP secret (מוצפן)
   image           String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -25,6 +26,21 @@ model User {
   backups         Backup[]
   activities      DynamicActivity[]
   notes           RecordNote[]
+  notifications   Notification[]
+}
+
+// התראות למשתמש (הקצאה, משימה וכו')
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // assignment, task_due, task_assigned, mention
+  title     String
+  body      String?
+  link      String?  // /dynamic/leads/xxx
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId, readAt])
 }
 
 // טוקן לאיפוס סיסמה

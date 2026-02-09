@@ -4,9 +4,11 @@ import { useState, useCallback, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Settings, Search, Keyboard } from "lucide-react";
+import { User, Settings, Search, Keyboard, Bell, Sun, Moon } from "lucide-react";
+import { usePolling } from "../lib/usePolling";
 
 type SearchResult = { id: string; entitySlug: string; entityName: string; title: string; updatedAt: string };
+type NotificationItem = { id: string; type: string; title: string; body: string | null; link: string | null; readAt: string | null; createdAt: string };
 
 export default function Header() {
   const { data: session } = useSession();
@@ -15,6 +17,32 @@ export default function Header() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const fetchNotifications = useCallback(() => {
+    fetch("/api/notifications")
+      .then((r) => r.json())
+      .then((res) => setNotifications(res.notifications || []));
+  }, []);
+  useEffect(() => fetchNotifications(), [fetchNotifications]);
+  usePolling(fetchNotifications, [], 60_000);
+
+  const markRead = (id: string) => {
+    fetch(`/api/notifications/${id}`, { method: "PATCH" });
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)));
+  };
+  const markAllRead = () => {
+    fetch("/api/notifications/read-all", { method: "POST" });
+    setNotifications((prev) => prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })));
+    setShowNotifications(false);
+  };
+  const unreadCount = notifications.filter((n) => !n.readAt).length;
+
+  const toggleDark = () => {
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("crm-theme", isDark ? "dark" : "light");
+  };
 
   const search = useCallback(() => {
     if (searchQ.length < 2) {
@@ -37,7 +65,7 @@ export default function Header() {
   }, [focused, searchQ, results.length]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white pl-6 pr-[calc(1.5rem+14rem)] shadow-sm print:hidden">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 pl-6 pr-[calc(1.5rem+14rem)] shadow-sm print:hidden">
       <div className="flex items-center gap-4 flex-1 min-w-0 max-w-xl">
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500 text-white">
@@ -81,9 +109,57 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        <div className="relative">
+          <button
+            onClick={() => setShowNotifications((v) => !v)}
+            className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            title="התראות"
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
+          {showNotifications && (
+            <div className="absolute left-0 top-full mt-1 w-80 max-h-96 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg z-50">
+              <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
+                <span className="text-sm font-medium text-slate-700">התראות</span>
+                {unreadCount > 0 && (
+                  <button onClick={markAllRead} className="text-xs text-primary-600 hover:underline">סמן הכל כנקרא</button>
+                )}
+              </div>
+              {notifications.length === 0 ? (
+                <p className="p-4 text-sm text-slate-500">אין התראות</p>
+              ) : (
+                notifications.slice(0, 20).map((n) => (
+                  <Link
+                    key={n.id}
+                    href={n.link || "#"}
+                    onClick={() => { markRead(n.id); setShowNotifications(false); }}
+                    className={`block border-b border-slate-50 px-3 py-2.5 text-sm hover:bg-slate-50 ${!n.readAt ? "bg-primary-50/50" : ""}`}
+                  >
+                    <p className="font-medium text-slate-800">{n.title}</p>
+                    {n.body && <p className="text-xs text-slate-500 mt-0.5 truncate">{n.body}</p>}
+                    <p className="text-xs text-slate-400 mt-1">{new Date(n.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}</p>
+                  </Link>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={toggleDark}
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:text-slate-400"
+          title="מצב כהה / בהיר"
+        >
+          <Sun className="h-5 w-5 dark:hidden" />
+          <Moon className="h-5 w-5 hidden dark:block" />
+        </button>
         <button
           onClick={() => window.dispatchEvent(new CustomEvent("showKeyboardShortcuts"))}
-          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:text-slate-400"
           title="קיצורי מקלדת (?)"
         >
           <Keyboard className="h-5 w-5" />

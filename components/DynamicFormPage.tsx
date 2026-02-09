@@ -63,21 +63,30 @@ export default function DynamicFormPage({
     }
   };
 
-  const handleSubmit = async (data: Record<string, unknown>) => {
+  const handleSubmit = async (data: Record<string, unknown>, forceCreate?: boolean) => {
     if (recordId) {
-      await fetch(`/api/dynamic/${entitySlug}/${recordId}`, {
+      const res = await fetch(`/api/dynamic/${entitySlug}/${recordId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data }),
       });
+      if (!res.ok) throw new Error((await res.json()).error || "שגיאה");
       router.push(`/dynamic/${entitySlug}/${recordId}`);
     } else {
       const res = await fetch(`/api/dynamic/${entitySlug}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data }),
+        body: JSON.stringify({ data, force: forceCreate === true }),
       });
       const record = await res.json();
+      if (res.status === 409 && record.duplicate) {
+        const msg = record.duplicates?.length
+          ? `נמצאו רשומות עם ${record.duplicates.map((d: { field: string }) => d.field).join(", ")} דומים. ליצור בכל זאת?`
+          : "נמצאה רשומה דומה. ליצור בכל זאת?";
+        if (window.confirm(msg)) return handleSubmit(data, true);
+        return;
+      }
+      if (!res.ok) throw new Error(record.error || "שגיאה");
       router.push(`/dynamic/${entitySlug}/${record.id}`);
     }
   };

@@ -142,11 +142,37 @@ export async function POST(
     const createdById = (session?.user as { id?: string })?.id || null;
     const copyTasks = body.copyTasks === true;
     const sourceRecordId = body.sourceRecordId;
+    const force = body.force === true;
+    const data = body.data || {} as Record<string, unknown>;
+
+    if (!force) {
+      const duplicateFields = entity.fields.filter((f) => f.type === "email" || f.type === "phone");
+      const existingRecords = await prisma.dynamicRecord.findMany({
+        where: { entityId: entity.id, isArchived: false },
+        select: { id: true, data: true },
+      });
+      const duplicates: { id: string; field: string; value: unknown }[] = [];
+      for (const f of duplicateFields) {
+        const v = data[f.name];
+        if (v === undefined || v === null || String(v).trim() === "") continue;
+        const match = existingRecords.find((r) => {
+          const rv = (r.data as Record<string, unknown>)[f.name];
+          return rv != null && String(rv).trim().toLowerCase() === String(v).trim().toLowerCase();
+        });
+        if (match) duplicates.push({ id: match.id, field: f.label, value: v });
+      }
+      if (duplicates.length > 0) {
+        return NextResponse.json(
+          { error: "נמצאו רשומות עם ערכים דומים", duplicate: true, duplicates },
+          { status: 409 }
+        );
+      }
+    }
 
     const record = await prisma.dynamicRecord.create({
       data: {
         entityId: entity.id,
-        data: body.data || {},
+        data,
         createdById,
       },
     });
