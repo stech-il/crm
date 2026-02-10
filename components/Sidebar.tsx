@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { LayoutDashboard, Settings, Users, Database, Clock, Book } from "lucide-react";
+import { LayoutDashboard, Settings, Users, Database, Clock, Layers } from "lucide-react";
 import { getEntityIcon } from "../lib/entityIcons";
 import { usePolling } from "../lib/usePolling";
 import { getRecentlyViewed, type RecentItem } from "../lib/recentlyViewed";
@@ -48,10 +48,10 @@ export default function Sidebar() {
           icon: Icon,
         };
       }),
+    { href: "/admin/entities", label: "כרטסאות", icon: Layers },
     { href: "/admin", label: "ניהול", icon: Settings },
     ...(isAdmin ? [{ href: "/admin/users", label: "משתמשים", icon: Users }] : []),
     ...(isAdmin ? [{ href: "/admin/backups", label: "גיבויים", icon: Database }] : []),
-    { href: "/api-docs", label: "תיעוד API", icon: Book },
   ];
 
   return (
@@ -83,7 +83,7 @@ export default function Sidebar() {
           const Icon = item.icon;
           const isActive =
             pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href));
+            (item.href !== "/" && item.href !== "/admin" && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}

@@ -231,7 +231,7 @@ export default function Dashboard() {
                 );
               })}
               <Link
-                href="/admin"
+                href="/admin/entities"
                 className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-slate-500 transition-colors hover:border-primary-300 hover:bg-primary-50/30 hover:text-primary-600 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-primary-700 dark:hover:bg-primary-900/20 dark:text-slate-400"
               >
                 <Plus className="h-6 w-6" />
@@ -249,15 +249,15 @@ export default function Dashboard() {
             <div>
               <p className="text-lg font-medium text-slate-700 dark:text-slate-200">המערכת ריקה</p>
               <p className="mt-2 text-slate-500 dark:text-slate-400">
-                התחל ביצירת כרטסת ראשונה בלוח הניהול כדי להגדיר שדות ורשומות.
+                התחל ביצירת כרטסת ראשונה בלשונית כרטסאות כדי להגדיר שדות ורשומות.
               </p>
             </div>
             <Link
-              href="/admin"
+              href="/admin/entities"
               className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600"
             >
               <Settings className="h-5 w-5" />
-              לוח ניהול
+              כרטסאות
             </Link>
           </div>
         </div>
