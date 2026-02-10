@@ -217,7 +217,7 @@ export default function EntitiesAdmin() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        if (!res.ok) throw new Error("שגיאה ביצירת כרטסת");
+        if (!res.ok) throw new Error("שגיאה ביצירת כרטיס");
       }
       closeEntityModal();
       fetchEntities();
@@ -327,19 +327,19 @@ export default function EntitiesAdmin() {
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
           <Layers className="inline h-8 w-8 ml-2" />
-          כרטסאות
+          כרטיסים
         </h1>
         <button
           onClick={() => openEntityModal()}
           className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700"
         >
           <Plus className="h-4 w-4" />
-          הוסף כרטסת
+          הוסף כרטיס
         </button>
       </div>
 
       <p className="mb-6 text-slate-600 dark:text-slate-400">
-        הגדרת כרטסאות ושדות. כל שדה ניתן להגדרה דינמית – טקסט, מספר, תאריך, בחירה מרשימה ועוד.
+        הגדרת כרטיסים ושדות. כל שדה ניתן להגדרה דינמית – טקסט, מספר, תאריך, בחירה מרשימה ועוד.
       </p>
 
       {isAdmin && (
@@ -377,12 +377,12 @@ export default function EntitiesAdmin() {
 
       {entities.length === 0 && (
         <div className="mb-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 p-12 text-center">
-          <p className="mb-6 text-slate-600 dark:text-slate-400">אין עדיין כרטסאות. התחל ביצירת כרטסת ראשונה.</p>
+          <p className="mb-6 text-slate-600 dark:text-slate-400">אין עדיין כרטיסים. התחל ביצירת כרטיס ראשונה.</p>
           <button
             onClick={() => openEntityModal()}
             className="rounded-lg bg-primary-600 px-6 py-3 font-medium text-white shadow-sm hover:bg-primary-700"
           >
-            + הוסף כרטסת ראשונה
+            + הוסף כרטיס ראשונה
           </button>
         </div>
       )}
@@ -418,14 +418,14 @@ export default function EntitiesAdmin() {
                   <button
                     onClick={() => openEntityModal(entity)}
                     className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-600"
-                    title="ערוך כרטסת"
+                    title="ערוך כרטיס"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setDeleteConfirmEntity(entity)}
                     className="rounded-lg p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                    title="מחק כרטסת"
+                    title="מחק כרטיס"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -504,7 +504,7 @@ export default function EntitiesAdmin() {
         ))}
       </div>
 
-      <Modal isOpen={entityModalOpen} onClose={closeEntityModal} title={editingEntity ? "עריכת כרטסת" : "הוספת כרטסת"}>
+      <Modal isOpen={entityModalOpen} onClose={closeEntityModal} title={editingEntity ? "עריכת כרטיס" : "הוספת כרטיס"}>
         <form onSubmit={submitEntity} className="space-y-4">
           {entityError && (
             <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">{entityError}</div>
@@ -579,7 +579,7 @@ export default function EntitiesAdmin() {
               disabled={entitySubmitting}
               className="flex-1 rounded-lg bg-primary-600 py-2.5 font-medium text-white hover:bg-primary-700 disabled:opacity-50"
             >
-              {entitySubmitting ? "שומר..." : editingEntity ? "עדכן" : "צור כרטסת"}
+              {entitySubmitting ? "שומר..." : editingEntity ? "עדכן" : "צור כרטיס"}
             </button>
             <button
               type="button"
@@ -597,7 +597,7 @@ export default function EntitiesAdmin() {
                 }}
                 className="rounded-lg border border-red-300 dark:border-red-700 px-4 py-2.5 font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
               >
-                מחק כרטסת
+                מחק כרטיס
               </button>
             )}
           </div>
@@ -709,7 +709,7 @@ export default function EntitiesAdmin() {
                 onChange={(e) => setFieldForm((f) => ({ ...f, showInCard: e.target.checked }))}
                 className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
               />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">מופיע בכרטסת (לחיצה על שורה)</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">מופיע בכרטיס (לחיצה על שורה)</span>
             </label>
           </div>
           <div className="flex gap-2 pt-2">
@@ -752,11 +752,11 @@ export default function EntitiesAdmin() {
         )}
       </Modal>
 
-      <Modal isOpen={!!deleteConfirmEntity} onClose={() => setDeleteConfirmEntity(null)} title="מחיקת כרטסת">
+      <Modal isOpen={!!deleteConfirmEntity} onClose={() => setDeleteConfirmEntity(null)} title="מחיקת כרטיס">
         {deleteConfirmEntity && (
           <div className="space-y-4">
             <p className="text-slate-600 dark:text-slate-400">
-              האם למחוק את הכרטסת &quot;{deleteConfirmEntity.name}&quot;? כל השדות והרשומות יימחקו. פעולה זו לא ניתנת לביטול.
+              האם למחוק את הכרטיס &quot;{deleteConfirmEntity.name}&quot;? כל השדות והרשומות יימחקו. פעולה זו לא ניתנת לביטול.
             </p>
             <div className="flex gap-2">
               <button onClick={deleteEntity} className="flex-1 rounded-lg bg-red-600 py-2.5 font-medium text-white hover:bg-red-700">

@@ -75,7 +75,7 @@ export default function Dashboard() {
                   <LayoutDashboard className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">כרטסאות</p>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">כרטיסים</p>
                   <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{data.entitiesCount}</p>
                 </div>
               </div>
@@ -178,10 +178,10 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* גרף רשומות לפי כרטסת */}
+          {/* גרף רשומות לפי כרטיס */}
           {data.entities.length > 0 && (
             <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
-              <h2 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">רשומות לפי כרטסת</h2>
+              <h2 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">רשומות לפי כרטיס</h2>
               <div className="space-y-2">
                 {data.entities.map((e) => {
                   const max = Math.max(...data.entities.map((x) => x.recordsCount), 1);
@@ -203,7 +203,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* כרטיסי כרטסאות */}
+          {/* כרטיסי כרטיסים */}
           <div>
             <h2 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">גישה מהירה</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -235,7 +235,7 @@ export default function Dashboard() {
                 className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-slate-500 transition-colors hover:border-primary-300 hover:bg-primary-50/30 hover:text-primary-600 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-primary-700 dark:hover:bg-primary-900/20 dark:text-slate-400"
               >
                 <Plus className="h-6 w-6" />
-                <span className="font-medium">הוסף כרטסת</span>
+                <span className="font-medium">הוסף כרטיס</span>
               </Link>
             </div>
           </div>
@@ -249,7 +249,7 @@ export default function Dashboard() {
             <div>
               <p className="text-lg font-medium text-slate-700 dark:text-slate-200">המערכת ריקה</p>
               <p className="mt-2 text-slate-500 dark:text-slate-400">
-                התחל ביצירת כרטסת ראשונה בלשונית כרטסאות כדי להגדיר שדות ורשומות.
+                התחל ביצירת כרטיס ראשונה בלשונית כרטיסים כדי להגדיר שדות ורשומות.
               </p>
             </div>
             <Link
@@ -257,7 +257,7 @@ export default function Dashboard() {
               className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600"
             >
               <Settings className="h-5 w-5" />
-              כרטסאות
+              כרטיסים
             </Link>
           </div>
         </div>

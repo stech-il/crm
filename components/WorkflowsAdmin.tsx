@@ -236,7 +236,7 @@ export default function WorkflowsAdmin() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">כרטסת</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">כרטיס</label>
             <select
               value={form.entitySlug}
               onChange={(e) => setForm((f) => ({ ...f, entitySlug: e.target.value }))}
@@ -247,7 +247,7 @@ export default function WorkflowsAdmin() {
                   {e.name} ({e.slug})
                 </option>
               ))}
-              {entities.length === 0 && <option value="">— בחר כרטסת —</option>}
+              {entities.length === 0 && <option value="">— בחר כרטיס —</option>}
             </select>
           </div>
           <div>

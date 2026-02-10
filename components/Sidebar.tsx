@@ -48,7 +48,7 @@ export default function Sidebar() {
           icon: Icon,
         };
       }),
-    { href: "/admin/entities", label: "כרטסאות", icon: Layers },
+    { href: "/admin/entities", label: "כרטיסים", icon: Layers },
     { href: "/admin", label: "ניהול", icon: Settings },
     ...(isAdmin ? [{ href: "/admin/users", label: "משתמשים", icon: Users }] : []),
     ...(isAdmin ? [{ href: "/admin/backups", label: "גיבויים", icon: Database }] : []),

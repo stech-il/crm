@@ -20,7 +20,7 @@ export default function ApiDocsPage() {
 
       <nav className="mb-12 flex flex-wrap gap-2">
         <a href="#auth" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">אימות</a>
-        <a href="#entities" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">כרטסאות</a>
+        <a href="#entities" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">כרטיסים</a>
         <a href="#records" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">רשומות</a>
         <a href="#webhooks" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">Webhooks</a>
         <a href="#import" className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">ייבוא CSV</a>
@@ -47,11 +47,11 @@ export default function ApiDocsPage() {
       </section>
 
       <section id="entities" className="mb-12">
-        <h2 className="text-xl font-bold text-slate-800 mb-4">כרטסאות</h2>
+        <h2 className="text-xl font-bold text-slate-800 mb-4">כרטיסים</h2>
 
         <div className="mb-8">
           <h3 className="font-semibold text-slate-700 mb-2">GET /api/v1/entities</h3>
-          <p className="text-slate-600 mb-2">רשימת כל הכרטסאות (מודולים) במערכת.</p>
+          <p className="text-slate-600 mb-2">רשימת כל הכרטיסים (מודולים) במערכת.</p>
           <div className="rounded-xl bg-slate-900 text-slate-100 p-4 overflow-x-auto mb-2">
             <pre className="text-sm">{`curl -X GET "${baseUrl}/entities" \\
   -H "Authorization: Bearer YOUR_API_KEY"`}</pre>
@@ -196,7 +196,7 @@ const expected = 'sha256=' + signature;
 
       <section id="import" className="mb-12">
         <h2 className="text-xl font-bold text-slate-800 mb-4">ייבוא CSV</h2>
-        <p className="text-slate-600 mb-4">מדף רשימת כרטסת, לחץ על "ייבוא CSV" ובחר קובץ. שורת הכותרות צריכה להתאים לשמות השדות או לתוויות (למשל: name, email, סטטוס).</p>
+        <p className="text-slate-600 mb-4">מדף רשימת כרטיסים, לחץ על "ייבוא CSV" ובחר קובץ. שורת הכותרות צריכה להתאים לשמות השדות או לתוויות (למשל: name, email, סטטוס).</p>
         <div className="rounded-xl border border-slate-200 p-4 bg-white">
           <pre className="text-sm text-slate-700 overflow-x-auto">{`name,email,status,phone
 יוחנן,john@example.com,new,050-1234567
@@ -218,7 +218,7 @@ const expected = 'sha256=' + signature;
               <tr><td className="px-4 py-3">200</td><td className="px-4 py-3">הצלחה</td></tr>
               <tr><td className="px-4 py-3">401</td><td className="px-4 py-3">לא מורשה – מפתח API חסר או לא תקין</td></tr>
               <tr><td className="px-4 py-3">403</td><td className="px-4 py-3">אין הרשאה – חסרה הרשאת records:read או records:write</td></tr>
-              <tr><td className="px-4 py-3">404</td><td className="px-4 py-3">כרטסת או רשומה לא נמצאו</td></tr>
+              <tr><td className="px-4 py-3">404</td><td className="px-4 py-3">כרטיס או רשומה לא נמצאו</td></tr>
               <tr><td className="px-4 py-3">429</td><td className="px-4 py-3">Rate limit – יותר מדי בקשות (200 לדקה)</td></tr>
               <tr><td className="px-4 py-3">500</td><td className="px-4 py-3">שגיאת שרת</td></tr>
             </tbody>

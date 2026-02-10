@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
@@ -21,6 +21,7 @@ export default function DynamicFormPage({
   const [initialData, setInitialData] = useState<Record<string, unknown>>({});
   const [templates, setTemplates] = useState<{ id: string; name: string; data: object }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (recordId) {
@@ -64,30 +65,45 @@ export default function DynamicFormPage({
   };
 
   const handleSubmit = async (data: Record<string, unknown>, forceCreate?: boolean) => {
-    if (recordId) {
-      const res = await fetch(`/api/dynamic/${entitySlug}/${recordId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || "שגיאה");
-      router.push(`/dynamic/${entitySlug}/${recordId}`);
-    } else {
-      const res = await fetch(`/api/dynamic/${entitySlug}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data, force: forceCreate === true }),
-      });
-      const record = await res.json();
-      if (res.status === 409 && record.duplicate) {
-        const msg = record.duplicates?.length
-          ? `נמצאו רשומות עם ${record.duplicates.map((d: { field: string }) => d.field).join(", ")} דומים. ליצור בכל זאת?`
-          : "נמצאה רשומה דומה. ליצור בכל זאת?";
-        if (window.confirm(msg)) return handleSubmit(data, true);
-        return;
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      if (recordId) {
+        const res = await fetch(`/api/dynamic/${entitySlug}/${recordId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data }),
+        });
+        if (!res.ok) throw new Error((await res.json()).error || "שגיאה");
+        router.push(`/dynamic/${entitySlug}/${recordId}`);
+      } else {
+        const res = await fetch(`/api/dynamic/${entitySlug}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data, force: forceCreate === true }),
+        });
+        const record = await res.json();
+        if (res.status === 409 && record.duplicate) {
+          const msg = record.duplicates?.length
+            ? `נמצאו רשומות עם ${record.duplicates.map((d: { field: string }) => d.field).join(", ")} דומים. ליצור בכל זאת?`
+            : "נמצאה רשומה דומה. ליצור בכל זאת?";
+          if (window.confirm(msg)) {
+            const resForce = await fetch(`/api/dynamic/${entitySlug}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ data, force: true }),
+            });
+            const recordForce = await resForce.json();
+            if (!resForce.ok) throw new Error(recordForce.error || "שגיאה");
+            router.push(`/dynamic/${entitySlug}/${recordForce.id}`);
+          }
+          return;
+        }
+        if (!res.ok) throw new Error(record.error || "שגיאה");
+        router.push(`/dynamic/${entitySlug}/${record.id}`);
       }
-      if (!res.ok) throw new Error(record.error || "שגיאה");
-      router.push(`/dynamic/${entitySlug}/${record.id}`);
+    } finally {
+      submittingRef.current = false;
     }
   };
 

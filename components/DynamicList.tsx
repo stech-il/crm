@@ -275,7 +275,7 @@ export default function DynamicList({ entitySlug }: Props) {
     if (loading) return <div className="p-8 animate-pulse h-64 bg-slate-200 rounded" />;
     return (
       <div className="p-8">
-        <p className="text-slate-500">כרטסת לא נמצאה.</p>
+        <p className="text-slate-500">כרטיס לא נמצאה.</p>
         <Link href="/admin" className="mt-4 inline-block text-primary-600 hover:underline">
           ← חזרה לניהול
         </Link>
@@ -289,7 +289,7 @@ export default function DynamicList({ entitySlug }: Props) {
         <h1 className="mb-4 text-2xl font-bold text-slate-800">{entity.name}</h1>
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
           <p className="text-amber-800">
-            אין שדות מוגדרים לכרטסת זו. הוסף שדות בלוח הניהול כדי ליצור רשומות.
+            אין שדות מוגדרים לכרטיס זו. הוסף שדות בלוח הניהול כדי ליצור רשומות.
           </p>
           <Link
             href="/admin"

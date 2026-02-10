@@ -15,7 +15,7 @@ export async function POST(
       where: { slug: entitySlug },
       include: { fields: { orderBy: { order: "asc" } } },
     });
-    if (!entity) return NextResponse.json({ error: "כרטסת לא נמצאה" }, { status: 404 });
+    if (!entity) return NextResponse.json({ error: "כרטיס לא נמצא" }, { status: 404 });
 
     const { sourceId, targetId } = await request.json();
     if (!sourceId || !targetId || sourceId === targetId) {

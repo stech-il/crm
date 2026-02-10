@@ -88,7 +88,7 @@ model FieldDefinition {
   order       Int      @default(0)
   section     String?
   showInList  Boolean  @default(true)   // מופיע בראשי הטבלה
-  showInCard  Boolean  @default(true)   // מופיע בכרטסת בלחיצה
+  showInCard  Boolean  @default(true)   // מופיע בכרטיס בלחיצה
   placeholder String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
