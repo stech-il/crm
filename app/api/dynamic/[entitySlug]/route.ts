@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../../lib/db";
 import { getSession } from "@/lib/auth";
 import { createActivity } from "@/lib/activity";
@@ -46,7 +47,7 @@ export async function GET(
       : where;
 
     let records = await prisma.dynamicRecord.findMany({
-      where: whereClause as { entityId: string; isArchived?: boolean; OR?: { assignedToId: string | null; createdById: string | null }[]; tags?: unknown },
+      where: whereClause as Prisma.DynamicRecordWhereInput,
       orderBy: { updatedAt: "desc" },
     });
 
