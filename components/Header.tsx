@@ -75,8 +75,9 @@ export default function Header() {
         <div className="relative flex-1 min-w-0">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
-            type="text"
+            type="search"
             placeholder="חיפוש גלובלי..."
+            aria-label="חיפוש רשומות במערכת"
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
             onFocus={() => setFocused(true)}
@@ -88,19 +89,19 @@ export default function Header() {
                 setShowResults(false);
               }
             }}
-            className="w-full rounded-lg border border-slate-200 py-2 pr-10 pl-3 text-sm"
+            className="w-full rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 py-2 pr-10 pl-3 text-sm"
           />
           {showResults && results.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-slate-200 bg-white shadow-lg py-2 max-h-64 overflow-y-auto z-50 min-w-0">
+            <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800 shadow-lg py-2 max-h-64 overflow-y-auto z-50 min-w-0">
               {results.map((r) => (
                 <Link
                   key={r.id}
                   href={`/dynamic/${r.entitySlug}/${r.id}`}
                   onClick={() => { setSearchQ(""); setShowResults(false); }}
-                  className="block px-4 py-2 hover:bg-slate-50"
+                  className="block px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
-                  <span className="font-medium text-primary-600">{r.title}</span>
-                  <span className="text-slate-500 text-sm mr-2"> – {r.entityName}</span>
+                  <span className="font-medium text-primary-600 dark:text-primary-400">{r.title}</span>
+                  <span className="text-slate-500 dark:text-slate-400 text-sm mr-2"> – {r.entityName}</span>
                 </Link>
               ))}
             </div>
@@ -112,8 +113,9 @@ export default function Header() {
         <div className="relative">
           <button
             onClick={() => setShowNotifications((v) => !v)}
-            className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:text-slate-400"
             title="התראות"
+            aria-label={unreadCount > 0 ? `התראות – ${unreadCount} לא נקראו` : "התראות"}
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
@@ -123,26 +125,26 @@ export default function Header() {
             )}
           </button>
           {showNotifications && (
-            <div className="absolute left-0 top-full mt-1 w-80 max-h-96 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg z-50">
-              <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-                <span className="text-sm font-medium text-slate-700">התראות</span>
+            <div className="absolute left-0 top-full mt-1 w-80 max-h-96 overflow-y-auto rounded-lg border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800 shadow-lg z-50">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 px-3 py-2">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">התראות</span>
                 {unreadCount > 0 && (
-                  <button onClick={markAllRead} className="text-xs text-primary-600 hover:underline">סמן הכל כנקרא</button>
+                  <button onClick={markAllRead} className="text-xs text-primary-600 dark:text-primary-400 hover:underline">סמן הכל כנקרא</button>
                 )}
               </div>
               {notifications.length === 0 ? (
-                <p className="p-4 text-sm text-slate-500">אין התראות</p>
+                <p className="p-4 text-sm text-slate-500 dark:text-slate-400">אין התראות</p>
               ) : (
                 notifications.slice(0, 20).map((n) => (
                   <Link
                     key={n.id}
                     href={n.link || "#"}
                     onClick={() => { markRead(n.id); setShowNotifications(false); }}
-                    className={`block border-b border-slate-50 px-3 py-2.5 text-sm hover:bg-slate-50 ${!n.readAt ? "bg-primary-50/50" : ""}`}
+                    className={`block border-b border-slate-50 dark:border-slate-700 px-3 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 ${!n.readAt ? "bg-primary-50/50 dark:bg-primary-900/20" : ""}`}
                   >
-                    <p className="font-medium text-slate-800">{n.title}</p>
-                    {n.body && <p className="text-xs text-slate-500 mt-0.5 truncate">{n.body}</p>}
-                    <p className="text-xs text-slate-400 mt-1">{new Date(n.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}</p>
+                    <p className="font-medium text-slate-800 dark:text-slate-200">{n.title}</p>
+                    {n.body && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{n.body}</p>}
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{new Date(n.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}</p>
                   </Link>
                 ))
               )}
@@ -153,6 +155,7 @@ export default function Header() {
           onClick={toggleDark}
           className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:text-slate-400"
           title="מצב כהה / בהיר"
+          aria-label="החלף מצב כהה / בהיר"
         >
           <Sun className="h-5 w-5 dark:hidden" />
           <Moon className="h-5 w-5 hidden dark:block" />

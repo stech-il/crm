@@ -4,7 +4,9 @@ import { prisma } from "../../lib/db";
 export async function GET() {
   try {
     const now = new Date();
-    const [entitiesCount, recordsCount, entities, overdueTasks, recentActivity] = await Promise.all([
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const [entitiesCount, recordsCount, entities, overdueTasks, recentActivity, newRecordsLast7Days, openTasksCount] = await Promise.all([
       prisma.entity.count(),
       prisma.dynamicRecord.count({ where: { isArchived: false } }),
       prisma.entity.findMany({
@@ -32,6 +34,8 @@ export async function GET() {
           createdBy: { select: { name: true } },
         },
       }),
+      prisma.dynamicRecord.count({ where: { isArchived: false, createdAt: { gte: sevenDaysAgo } } }),
+      prisma.recordTask.count({ where: { done: false, record: { isArchived: false } } }),
     ]);
     const activityLabels: Record<string, string> = {
       created: "נוצרה",
@@ -46,6 +50,8 @@ export async function GET() {
     return NextResponse.json({
       entitiesCount,
       recordsCount,
+      newRecordsLast7Days,
+      openTasksCount,
       overdueTasksCount: overdueTasks.length,
       overdueTasks: overdueTasks.map((t) => ({
         id: t.id,
