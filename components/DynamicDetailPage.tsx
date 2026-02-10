@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy, Archive, ArchiveRestore, Printer, Link2, FileText, GitMerge } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Pencil, FileDown, Plus, Check, Trash2, Phone, MessageSquare, Activity, Copy, Archive, ArchiveRestore, Printer, Link2, FileText, GitMerge, Mail, Calendar, Send, Megaphone, Eye, EyeOff } from "lucide-react";
 import Modal from "./Modal";
 import { formatFieldValue, formatFieldValueForTitle, isFileValue } from "../lib/formatFieldValue";
 import { addRecentlyViewed } from "../lib/recentlyViewed";
@@ -16,6 +17,9 @@ type CallLog = { id: string; phoneNumber: string; direction: string; duration?: 
 type ActivityItem = { id: string; type: string; content: string | null; createdAt: string; createdBy?: { name: string } | null };
 type Note = { id: string; content: string; createdAt: string; createdBy?: { name: string } | null };
 type RecordTag = { id: string; tag: { id: string; name: string; color: string } };
+type Campaign = { id: string; name: string; description?: string | null; status: string };
+type RecordCampaignLink = { campaign: Campaign };
+type RecordWatcherLink = { user: { id: string; name: string } };
 type DynamicRecordData = {
   id: string;
   data: Record<string, unknown>;
@@ -29,6 +33,8 @@ type DynamicRecordData = {
   activities?: ActivityItem[];
   notes?: Note[];
   tags?: RecordTag[];
+  campaigns?: RecordCampaignLink[];
+  watchers?: RecordWatcherLink[];
 };
 
 const ACTIVITY_LABELS: Record<string, string> = {
@@ -39,6 +45,9 @@ const ACTIVITY_LABELS: Record<string, string> = {
   task_undone: "בוטל סיום משימה",
   call_added: "נרשמה שיחה",
   note_added: "נוספה הערה",
+  meeting: "פגישה",
+  email_sent: "אימייל נשלח",
+  message: "הודעה",
 };
 
 export default function DynamicDetailPage({
@@ -68,7 +77,12 @@ export default function DynamicDetailPage({
   const [mergeTargetId, setMergeTargetId] = useState("");
   const [mergeRecords, setMergeRecords] = useState<{ id: string; data: Record<string, unknown> }[]>([]);
   const [merging, setMerging] = useState(false);
+  const [newInteractionType, setNewInteractionType] = useState<"meeting" | "email_sent" | "message">("meeting");
+  const [newInteractionContent, setNewInteractionContent] = useState("");
+  const [campaignsList, setCampaignsList] = useState<Campaign[]>([]);
   const router = useRouter();
+  const { data: session } = useSession();
+  const currentUserId = (session?.user as { id?: string })?.id;
 
   const fetchData = useCallback(() => {
     fetch(`/api/dynamic/${entitySlug}/${recordId}`)
@@ -84,6 +98,7 @@ export default function DynamicDetailPage({
   useEffect(() => {
     fetch("/api/tags").then((r) => r.json()).then((t) => setAllTags(Array.isArray(t) ? t : [])).catch(() => setAllTags([]));
     fetch("/api/users").then((r) => r.json()).then((u) => setUsers(Array.isArray(u) ? u : [])).catch(() => setUsers([]));
+    fetch("/api/campaigns").then((r) => r.json()).then((c) => setCampaignsList(Array.isArray(c) ? c : [])).catch(() => setCampaignsList([]));
   }, []);
 
   useEffect(() => {
@@ -272,6 +287,42 @@ export default function DynamicDetailPage({
     fetchData();
   };
 
+  const addInteraction = async () => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}/activities`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: newInteractionType, content: newInteractionContent.trim() || null }),
+    });
+    setNewInteractionContent("");
+    fetchData();
+  };
+
+  const recordCampaigns = (record?.campaigns || []).map((c) => c.campaign);
+  const addCampaign = async (campaignId: string) => {
+    if (!campaignId) return;
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}/campaigns`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ campaignId }),
+    });
+    fetchData();
+  };
+  const removeCampaign = async (campaignId: string) => {
+    await fetch(`/api/dynamic/${entitySlug}/${recordId}/campaigns?campaignId=${campaignId}`, { method: "DELETE" });
+    fetchData();
+  };
+
+  const watchers = record?.watchers?.map((w) => w.user) || [];
+  const isWatching = Boolean(currentUserId && watchers.some((w) => w.id === currentUserId));
+  const toggleWatch = async () => {
+    if (isWatching) {
+      await fetch(`/api/dynamic/${entitySlug}/${recordId}/watchers`, { method: "DELETE" });
+    } else {
+      await fetch(`/api/dynamic/${entitySlug}/${recordId}/watchers`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    }
+    fetchData();
+  };
+
   const saveAsTemplate = async () => {
     if (!templateName.trim()) return;
     await fetch(`/api/dynamic/${entitySlug}/templates`, {
@@ -395,6 +446,14 @@ export default function DynamicDetailPage({
           >
             <Link2 className="h-4 w-4" />
             {linkCopied ? "הועתק!" : "העתק קישור"}
+          </button>
+          <button
+            onClick={toggleWatch}
+            className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium ${isWatching ? "border-primary-300 bg-primary-50 text-primary-700" : "border-slate-300 text-slate-600 hover:bg-slate-50"}`}
+            title={isWatching ? "הפסק לעקוב" : "עקוב אחרי רשומה – תקבל התראה בעדכון"}
+          >
+            {isWatching ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {isWatching ? "עוקב" : "עקוב"}
           </button>
           <button
             onClick={printRecord}
@@ -627,6 +686,74 @@ export default function DynamicDetailPage({
           {notes.length === 0 && <p className="text-sm text-slate-500">אין הערות</p>}
         </ul>
       </div>
+
+      {/* אינטראקציות: פגישה, אימייל, הודעה */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm mb-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-800 flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          תיעוד אינטראקציות
+        </h2>
+        <div className="mb-4 flex flex-wrap gap-2 items-end">
+          <select
+            value={newInteractionType}
+            onChange={(e) => setNewInteractionType(e.target.value as "meeting" | "email_sent" | "message")}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="meeting">פגישה</option>
+            <option value="email_sent">אימייל</option>
+            <option value="message">הודעה</option>
+          </select>
+          <textarea
+            value={newInteractionContent}
+            onChange={(e) => setNewInteractionContent(e.target.value)}
+            placeholder="תיאור / פרטים..."
+            rows={1}
+            className="flex-1 min-w-[200px] rounded-lg border border-slate-300 px-3 py-2 text-sm resize-none"
+          />
+          <button
+            onClick={addInteraction}
+            className="flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            <Plus className="h-4 w-4" />
+            הוסף
+          </button>
+        </div>
+      </div>
+
+      {/* קמפיינים */}
+      {(recordCampaigns.length > 0 || campaignsList.length > 0) && (
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm mb-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <Megaphone className="h-5 w-5" />
+            קמפיינים
+          </h2>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {recordCampaigns.map((c) => (
+              <span key={c.id} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
+                {c.name}
+                <button onClick={() => removeCampaign(c.id)} className="hover:text-red-600">×</button>
+              </span>
+            ))}
+          </div>
+          {campaignsList.filter((c) => !recordCampaigns.some((rc) => rc.id === c.id)).length > 0 && (
+            <select
+              onChange={(e) => { const v = e.target.value; if (v) addCampaign(v); e.target.value = ""; }}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              <option value="">+ הוסף לקמפיין</option>
+              {campaignsList.filter((c) => !recordCampaigns.some((rc) => rc.id === c.id)).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
+      {watchers.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm mb-6">
+          <p className="text-sm text-slate-600"><Eye className="h-4 w-4 inline ml-1" /> עוקבים: {watchers.map((u) => u.name).join(", ")}</p>
+        </div>
+      )}
 
       {/* ציר זמן פעילות */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

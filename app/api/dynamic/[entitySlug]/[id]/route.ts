@@ -6,6 +6,7 @@ import { triggerWebhooks } from "@/lib/webhooks";
 import { logAudit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
 import { runWorkflowRules } from "@/lib/workflow";
+import { notifyRecordWatchers } from "@/lib/watchers";
 
 export async function GET(
   _request: NextRequest,
@@ -30,6 +31,8 @@ export async function GET(
         callLogs: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
         notes: { orderBy: { createdAt: "desc" }, include: { createdBy: { select: { name: true } } } },
         tags: { include: { tag: true } },
+        campaigns: { include: { campaign: true } },
+        watchers: { include: { user: { select: { id: true, name: true } } } },
       },
     });
     if (!record) return NextResponse.json({ error: "Record not found" }, { status: 404 });
@@ -88,6 +91,9 @@ export async function PATCH(
       entitySlug,
       recordId: record.id,
     });
+    try {
+      await notifyRecordWatchers(record.id, entitySlug, entity.name, "רשומה עודכנה", `הרשומה ב-${entity.name} עודכנה`);
+    } catch {}
 
     return NextResponse.json(record);
   } catch (error) {

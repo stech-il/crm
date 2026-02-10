@@ -27,6 +27,7 @@ model User {
   activities      DynamicActivity[]
   notes           RecordNote[]
   notifications   Notification[]
+  watchedRecords RecordWatcher[]
 }
 
 // התראות למשתמש (הקצאה, משימה וכו')
@@ -115,6 +116,8 @@ model DynamicRecord {
   callLogs      CallLog[]
   notes         RecordNote[]
   tags          RecordTag[]
+  campaigns     RecordCampaign[]
+  watchers      RecordWatcher[]
 }
 
 // קישור רשומה-תגית
@@ -301,4 +304,41 @@ model WorkflowRule {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// קמפיינים שיווקיים
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String   @default("active") // draft, active, completed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  records     RecordCampaign[]
+}
+
+// קישור רשומה-קמפיין (רבים לרבים)
+model RecordCampaign {
+  id         String         @id @default(cuid())
+  recordId   String
+  record     DynamicRecord  @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  campaignId String
+  campaign   Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+  @@unique([recordId, campaignId])
+  @@index([campaignId])
+}
+
+// עוקבים אחרי רשומה – לקבלת התראות בעדכון (שיתוף פעולה)
+model RecordWatcher {
+  id        String         @id @default(cuid())
+  recordId  String
+  record    DynamicRecord  @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  @@unique([recordId, userId])
+  @@index([userId])
 }

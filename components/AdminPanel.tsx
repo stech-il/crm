@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Settings, Database, RotateCcw, Zap, Webhook, FileText, Key, Users, ListChecks } from "lucide-react";
+import { Settings, Database, RotateCcw, Zap, Webhook, FileText, Key, Users, ListChecks, Megaphone, Plug } from "lucide-react";
 
 export default function AdminPanel() {
   const [backupCreating, setBackupCreating] = useState(false);
@@ -73,6 +73,20 @@ export default function AdminPanel() {
             >
               <Key className="h-4 w-4" />
               מפתחות API
+            </Link>
+            <Link
+              href="/admin/campaigns"
+              className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              <Megaphone className="h-4 w-4" />
+              קמפיינים
+            </Link>
+            <Link
+              href="/integrations"
+              className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              <Plug className="h-4 w-4" />
+              ממשקות
             </Link>
           </>
         )}

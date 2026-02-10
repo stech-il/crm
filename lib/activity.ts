@@ -10,7 +10,10 @@ export type ActivityType =
   | "task_done"
   | "task_undone"
   | "call_added"
-  | "note_added";
+  | "note_added"
+  | "meeting"
+  | "email_sent"
+  | "message";
 
 export async function createActivity(
   recordId: string,
