@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Shield, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Shield, ShieldCheck, Copy, Check } from "lucide-react";
 
 export default function SettingsPage() {
   const [twoFaEnabled, setTwoFaEnabled] = useState<boolean | null>(null);
@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const fetchStatus = () => {
     fetch("/api/auth/2fa/status")
@@ -150,14 +151,30 @@ export default function SettingsPage() {
             <p className="text-sm text-slate-600">
               סרוק את ה-QR באפליקציה או הזן את המפתח ידנית:
             </p>
-            <p className="font-mono text-xs bg-slate-100 p-3 rounded break-all">{setupSecret}</p>
             {setupUrl && (
-              <p className="text-xs text-slate-500">
-                <a href={decodeURIComponent(setupUrl)} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
-                  פתח קישור להגדרה באפליקציה
-                </a>
-              </p>
+              <div className="flex flex-col items-start gap-2">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(decodeURIComponent(setupUrl))}`}
+                  alt="QR לאימות דו-שלבי"
+                  className="rounded border border-slate-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = decodeURIComponent(setupUrl);
+                    navigator.clipboard.writeText(url).then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    });
+                  }}
+                  className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                  {copied ? "הועתק" : "העתק קישור להגדרה באפליקציה"}
+                </button>
+              </div>
             )}
+            <p className="font-mono text-xs bg-slate-100 p-3 rounded break-all">{setupSecret}</p>
             <p className="text-sm text-slate-600">הזן קוד מהאפליקציה לאישור:</p>
             <div className="flex gap-2">
               <input
