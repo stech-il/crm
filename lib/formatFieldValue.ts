@@ -1,67 +1,37 @@
-const HEBREW_MONTHS: Record<string, string> = {
-  Nisan: "ניסן", Iyyar: "אייר", Sivan: "סיוון", Tammuz: "תמוז", Av: "אב", Elul: "אלול",
-  Tishrei: "תשרי", Cheshvan: "חשון", Kislev: "כסלו", Tevet: "טבת", Shvat: "שבט", Adar: "אדר", "Adar I": "אדר א", "Adar II": "אדר ב",
-};
+import { toJewishDate, formatJewishDateInHebrew } from "jewish-date";
 
-const HEBREW_ONES = "אבגדהוזחט";
-const HEBREW_TENS = "יכלמנסעפצ";
-const HEBREW_HUNDREDS = "קרשת";
-
-/** המרת מספר 1–30 לאותיות עבריות (יום) */
-function numToHebrewDay(n: number): string {
-  if (n < 1 || n > 30) return String(n);
-  if (n === 15) return "ט״ו";
-  if (n === 16) return "ט״ז";
-  if (n <= 9) return HEBREW_ONES[n - 1]!;
-  if (n === 10) return "י";
-  if (n < 20) return "י" + HEBREW_ONES[n - 11]!;
-  if (n === 20) return "כ";
-  if (n < 30) return "כ" + HEBREW_ONES[n - 21]!;
-  return "ל";
-}
-
-/** המרת שנה עברית (למשל 5785) לאותיות עבריות */
-function numToHebrewYear(n: number): string {
-  if (n < 5000) return String(n);
-  let rest = n - 5000;
-  let s = "ה׳";
-  const pairs: [number, string][] = [
-    [400, "ת"], [300, "ש"], [200, "ר"], [100, "ק"], [90, "צ"], [80, "פ"], [70, "ע"], [60, "ס"],
-    [50, "נ"], [40, "מ"], [30, "ל"], [20, "כ"], [10, "י"], [9, "ט"], [8, "ח"], [7, "ז"], [6, "ו"],
-    [5, "ה"], [4, "ד"], [3, "ג"], [2, "ב"], [1, "א"],
-  ];
-  for (const [val, letter] of pairs) {
-    while (rest >= val) {
-      s += letter;
-      rest -= val;
-    }
+/**
+ * Parse date string (YYYY-MM-DD or ISO) as local date to avoid timezone day shift
+ */
+function parseDateLocal(dateStr: string): Date | null {
+  const s = String(dateStr).trim();
+  const onlyDate = /^\d{4}-\d{2}-\d{2}$/.test(s);
+  if (onlyDate) {
+    const parts = s.split("-").map(Number);
+    const y = parts[0], m = parts[1], d = parts[2];
+    if (y != null && m != null && d != null) return new Date(y, m - 1, d);
   }
-  if (s.length > 2) s = s.slice(0, -1) + "״" + s.slice(-1);
-  return s;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 /**
- * המרת תאריך לועזי לתאריך עברי מלא (אותיות בלבד, בלי מספרים)
+ * Convert Gregorian date string to Hebrew date for display (using jewish-date)
  */
 function toHebrewDate(dateStr: string): string {
   try {
-    const { toJewishDate } = require("jewish-date");
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
+    const d = parseDateLocal(dateStr);
+    if (!d) return dateStr;
     const j = toJewishDate(d);
-    const monthHeb = HEBREW_MONTHS[j.monthName] || j.monthName;
-    const dayHeb = numToHebrewDay(j.day);
-    const yearHeb = numToHebrewYear(j.year);
-    return `${dayHeb} ב${monthHeb} ${yearHeb}`;
+    return formatJewishDateInHebrew(j) || dateStr;
   } catch {
     return dateStr;
   }
 }
 
 /**
- * מחזיר טקסט להצגה עבור ערך שדה.
- * מטפל בקבצים (אובייקט עם url/name) ובטיפוסים אחרים.
- * @param fieldType - סוג השדה (למשל date-hebrew להמרה לעברי)
+ * Format field value for display. Handles files (object with url/name) and other types.
+ * @param fieldType - e.g. date-hebrew for Hebrew date conversion
  */
 export function formatFieldValue(value: unknown, fieldType?: string): string {
   if (value == null || value === "") return "—";
@@ -80,7 +50,7 @@ export function formatFieldValue(value: unknown, fieldType?: string): string {
 }
 
 /**
- * מחזיר טקסט מתאים לכותרת (מעדיף filename על פני url)
+ * Format value for title (prefers filename over url)
  */
 export function formatFieldValueForTitle(value: unknown): string {
   if (value == null || value === "") return "";
@@ -94,7 +64,7 @@ export function formatFieldValueForTitle(value: unknown): string {
 }
 
 /**
- * מחזיר האם הערך הוא קובץ (יש URL להורדה)
+ * Check if value is a file (has URL for download)
  */
 export function isFileValue(value: unknown): value is { url: string; filename?: string } {
   if (typeof value !== "object" || value === null) return false;
