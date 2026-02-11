@@ -41,9 +41,9 @@ export default function IntegrationsPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">ממשקות למערכות אחרות</h1>
+      <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">ממשקות</h1>
       <p className="text-slate-600 dark:text-slate-400 mb-8">
-        חיבור ל-API, Webhooks, אימייל ואוטומציות. מתאים לחיבור למערכת ERP, דיוור אלקטרוני וכלים חיצוניים.
+        חיבור ל-API, Webhooks, אימייל ואוטומציות. מתאים להתממשקות עם מערכת ERP, דיוור אלקטרוני וכלים חיצוניים.
       </p>
       <div className="grid gap-6 sm:grid-cols-2">
         {items.map((item) => {
