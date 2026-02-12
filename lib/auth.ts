@@ -3,8 +3,6 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/app/lib/db";
 import bcrypt from "bcryptjs";
-import { verifyTOTP } from "@/lib/totp";
-import { decryptPlain } from "@/lib/encryption";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -13,7 +11,6 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "אימייל", type: "email" },
         password: { label: "סיסמה", type: "password" },
-        totpCode: { label: "קוד אימות", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
@@ -26,17 +23,6 @@ export const authOptions: NextAuthOptions = {
         }
         const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) return null;
-        if (user.totpSecret) {
-          const code = credentials.totpCode?.trim();
-          if (!code) throw new Error("NEED_TOTP");
-          let secret: string;
-          try {
-            secret = decryptPlain(user.totpSecret);
-          } catch {
-            return null;
-          }
-          if (!verifyTOTP(secret, code)) throw new Error("קוד אימות שגוי או שפג תוקפו");
-        }
         return {
           id: user.id,
           name: user.name,

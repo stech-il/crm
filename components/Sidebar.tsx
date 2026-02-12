@@ -50,7 +50,7 @@ export default function Sidebar() {
       }),
     { href: "/admin/entities", label: "כרטיסים", icon: Layers },
     { href: "/reports", label: "דוחות", icon: BarChart3 },
-    { href: "/integrations", label: "ממשקות", icon: Plug },
+    { href: "/integrations", label: "ממשקים", icon: Plug },
     { href: "/admin", label: "ניהול", icon: Settings },
     ...(isAdmin ? [{ href: "/admin/users", label: "משתמשים", icon: Users }] : []),
     ...(isAdmin ? [{ href: "/admin/backups", label: "גיבויים", icon: Database }] : []),

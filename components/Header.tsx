@@ -170,7 +170,7 @@ export default function Header() {
         <Link
           href="/settings"
           className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:text-slate-400"
-          title="הגדרות חשבון (2FA)"
+          title="הגדרות"
         >
           <Shield className="h-5 w-5" />
         </Link>
